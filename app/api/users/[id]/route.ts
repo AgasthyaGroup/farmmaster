@@ -4,7 +4,7 @@ import User from '@/src/models/User';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, notFoundResponse } from '@/src/utils/responses';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   return withAuth(req, ['SUPER_ADMIN'], async () => {
     try {
       const { id } = await params;
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   });
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   return withAuth(req, ['SUPER_ADMIN'], async () => {
     try {
       const { id } = await params;
@@ -39,7 +39,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   });
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   return withAuth(req, ['SUPER_ADMIN'], async () => {
     try {
       const { id } = await params;
