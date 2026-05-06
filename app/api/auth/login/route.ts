@@ -4,14 +4,15 @@ import dbConnect from '@/src/database/dbConnection';
 import User from '@/src/models/User';
 import { generateAccessToken, generateRefreshToken } from '@/src/utils/jwt';
 import { successResponse, errorResponse } from '@/src/utils/responses';
+import { loginSchema } from '@/src/utils/validation';
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password } = await req.json();
-
-    if (!email || !password) {
-      return errorResponse('Email and password are required', 400);
+    const parsedBody = loginSchema.safeParse(await req.json());
+    if (!parsedBody.success) {
+      return errorResponse(parsedBody.error.issues[0]?.message || 'Invalid request body', 400);
     }
+    const { email, password } = parsedBody.data;
 
     await dbConnect();
 

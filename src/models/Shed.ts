@@ -14,4 +14,6 @@ const ShedSchema = new Schema(
   { timestamps: true }
 );
 
+ShedSchema.index({ farmId: 1, code: 1 }, { unique: true });
+
 export default mongoose.models.Shed || mongoose.model('Shed', ShedSchema);

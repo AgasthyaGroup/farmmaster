@@ -29,6 +29,10 @@ export const successResponse = <T>(data: T, message: string = 'Success') => {
   return createResponse(true, message, data, null, 200);
 };
 
+export const createdResponse = <T>(data: T, message: string = 'Created') => {
+  return createResponse(true, message, data, null, 201);
+};
+
 export const errorResponse = (error: string, status: number = 400) => {
   return createResponse(false, 'An error occurred', null, error, status);
 };

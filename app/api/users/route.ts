@@ -3,7 +3,15 @@ import bcrypt from 'bcryptjs';
 import dbConnect from '@/src/database/dbConnection';
 import User from '@/src/models/User';
 import { withAuth } from '@/src/utils/authGuard';
-import { successResponse, errorResponse } from '@/src/utils/responses';
+import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
+import { createUserSchema } from '@/src/utils/validation';
+
+const sanitizeUser = (user: any) => {
+  if (!user) return user;
+  const plainUser = typeof user.toObject === 'function' ? user.toObject() : user;
+  const { password, ...safeUser } = plainUser;
+  return safeUser;
+};
 
 export async function GET(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN'], async () => {
@@ -20,12 +28,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN'], async () => {
     try {
-      const body = await req.json();
-      const { name, email, phone, password, role, farmId } = body;
-
-      if (!name || !email || !password || !role) {
-        return errorResponse('Missing required fields', 400);
+      const parsedBody = createUserSchema.safeParse(await req.json());
+      if (!parsedBody.success) {
+        return errorResponse(parsedBody.error.issues[0]?.message || 'Invalid request body', 400);
       }
+      const { name, email, phone, password, role, farmId } = parsedBody.data;
 
       await dbConnect();
       
@@ -44,7 +51,7 @@ export async function POST(req: NextRequest) {
         farmId: role === 'SUPER_ADMIN' ? null : farmId,
       });
 
-      return successResponse(user, 'User created successfully');
+      return createdResponse(sanitizeUser(user), 'User created successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);
     }

@@ -14,4 +14,7 @@ const CattleSchema = new Schema(
   { timestamps: true }
 );
 
+CattleSchema.index({ farmId: 1, code: 1 }, { unique: true });
+CattleSchema.index({ tagId: 1 }, { unique: true });
+
 export default mongoose.models.Cattle || mongoose.model('Cattle', CattleSchema);

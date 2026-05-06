@@ -1,7 +1,15 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'secret';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'refresh-secret';
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error('Please define JWT_SECRET environment variable');
+}
+
+if (!JWT_REFRESH_SECRET) {
+  throw new Error('Please define JWT_REFRESH_SECRET environment variable');
+}
 
 export interface TokenPayload {
   userId: string;

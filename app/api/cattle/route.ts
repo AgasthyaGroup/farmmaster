@@ -3,7 +3,8 @@ import dbConnect from '@/src/database/dbConnection';
 import Cattle from '@/src/models/Cattle';
 import Tag from '@/src/models/Tag';
 import { withAuth } from '@/src/utils/authGuard';
-import { successResponse, errorResponse } from '@/src/utils/responses';
+import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
+import { createCattleSchema } from '@/src/utils/validation';
 
 export async function GET(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN'], async () => {
@@ -24,12 +25,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN'], async () => {
     try {
-      const body = await req.json();
-      const { farmId, name, code, tagId, type, shedId } = body;
-
-      if (!farmId || !name || !code || !tagId || !shedId) {
-        return errorResponse('Missing required fields', 400);
+      const parsedBody = createCattleSchema.safeParse(await req.json());
+      if (!parsedBody.success) {
+        return errorResponse(parsedBody.error.issues[0]?.message || 'Invalid request body', 400);
       }
+      const { farmId, name, code, tagId, type, shedId } = parsedBody.data;
 
       await dbConnect();
 
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       // Update tag status
       await Tag.findByIdAndUpdate(tagId, { status: 'ASSIGNED' });
 
-      return successResponse(cattle, 'Cattle registered successfully');
+      return createdResponse(cattle, 'Cattle registered successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);
     }

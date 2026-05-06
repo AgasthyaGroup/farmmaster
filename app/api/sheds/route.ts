@@ -2,7 +2,8 @@ import { NextRequest } from 'next/server';
 import dbConnect from '@/src/database/dbConnection';
 import Shed from '@/src/models/Shed';
 import { withAuth } from '@/src/utils/authGuard';
-import { successResponse, errorResponse } from '@/src/utils/responses';
+import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
+import { createShedSchema } from '@/src/utils/validation';
 
 export async function GET(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN'], async () => {
@@ -19,12 +20,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN'], async () => {
     try {
-      const body = await req.json();
-      const { farmId, name, code, lines, capacity, remarks } = body;
-
-      if (!farmId || !name || !code) {
-        return errorResponse('Farm, Name and code are required', 400);
+      const parsedBody = createShedSchema.safeParse(await req.json());
+      if (!parsedBody.success) {
+        return errorResponse(parsedBody.error.issues[0]?.message || 'Invalid request body', 400);
       }
+      const { farmId, name, code, lines, capacity, remarks } = parsedBody.data;
 
       await dbConnect();
       const shed = await Shed.create({
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
         remarks,
       });
 
-      return successResponse(shed, 'Shed created successfully');
+      return createdResponse(shed, 'Shed created successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);
     }

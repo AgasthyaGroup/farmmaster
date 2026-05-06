@@ -3,9 +3,9 @@ import mongoose, { Schema } from 'mongoose';
 const UserSchema = new Schema(
   {
     name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    phone: { type: String, required: true },
-    password: { type: String, required: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    phone: { type: String, required: false, default: '' },
+    password: { type: String, required: true, select: false },
     role: {
       type: String,
       enum: ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE'],

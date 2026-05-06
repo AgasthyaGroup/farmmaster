@@ -2,7 +2,8 @@ import { NextRequest } from 'next/server';
 import dbConnect from '@/src/database/dbConnection';
 import Farm from '@/src/models/Farm';
 import { withAuth } from '@/src/utils/authGuard';
-import { successResponse, errorResponse } from '@/src/utils/responses';
+import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
+import { createFarmSchema } from '@/src/utils/validation';
 
 export async function GET(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN'], async () => {
@@ -19,12 +20,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN'], async () => {
     try {
-      const body = await req.json();
-      const { name, code, address, location } = body;
-
-      if (!name || !code) {
-        return errorResponse('Name and code are required', 400);
+      const parsedBody = createFarmSchema.safeParse(await req.json());
+      if (!parsedBody.success) {
+        return errorResponse(parsedBody.error.issues[0]?.message || 'Invalid request body', 400);
       }
+      const { name, code, address, location } = parsedBody.data;
 
       await dbConnect();
       
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
         location,
       });
 
-      return successResponse(farm, 'Farm created successfully');
+      return createdResponse(farm, 'Farm created successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);
     }

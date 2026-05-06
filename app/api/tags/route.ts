@@ -2,7 +2,8 @@ import { NextRequest } from 'next/server';
 import dbConnect from '@/src/database/dbConnection';
 import Tag from '@/src/models/Tag';
 import { withAuth } from '@/src/utils/authGuard';
-import { successResponse, errorResponse } from '@/src/utils/responses';
+import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
+import { createTagSchema } from '@/src/utils/validation';
 
 export async function GET(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN'], async () => {
@@ -19,12 +20,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN'], async () => {
     try {
-      const body = await req.json();
-      const { farmId, code, type } = body;
-
-      if (!farmId || !code || !type) {
-        return errorResponse('Missing required fields', 400);
+      const parsedBody = createTagSchema.safeParse(await req.json());
+      if (!parsedBody.success) {
+        return errorResponse(parsedBody.error.issues[0]?.message || 'Invalid request body', 400);
       }
+      const { farmId, code, type } = parsedBody.data;
 
       await dbConnect();
       
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
         type,
       });
 
-      return successResponse(tag, 'Tag created successfully');
+      return createdResponse(tag, 'Tag created successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);
     }
