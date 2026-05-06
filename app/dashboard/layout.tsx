@@ -8,6 +8,7 @@ import {
   Warehouse, 
   Tag, 
   Users, 
+  ShieldCheck,
   Beef as CattleIcon,
   LogOut,
   Menu,
@@ -29,6 +30,7 @@ const sidebarItems = [
   { name: 'Tags', icon: Tag, href: '/dashboard/tags' },
   { name: 'Cattle', icon: CattleIcon, href: '/dashboard/cattle' },
   { name: 'User Management', icon: Users, href: '/dashboard/users' },
+  { name: 'Role Management', icon: ShieldCheck, href: '/dashboard/roles' },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -49,6 +51,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     setUser(JSON.parse(storedUser));
   }, [router]);
 
+  useEffect(() => {
+    if (!user) return;
+    const isFarmAdmin = user.role === 'FARM_ADMIN';
+    if (isFarmAdmin && (pathname === '/dashboard/users' || pathname === '/dashboard/roles')) {
+      router.replace('/dashboard');
+    }
+  }, [user, pathname, router]);
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -56,6 +66,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   };
 
   if (!user) return null;
+
+  const allowedSidebarItems = sidebarItems.filter((item) => {
+    if (user.role === 'FARM_ADMIN' && (item.href === '/dashboard/users' || item.href === '/dashboard/roles')) {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex overflow-hidden">
@@ -73,7 +90,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </div>
 
           <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-            {sidebarItems.map((item) => {
+            {allowedSidebarItems.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Link

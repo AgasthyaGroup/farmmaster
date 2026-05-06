@@ -45,8 +45,10 @@ export const createCattleSchema = z.object({
 
 export const createUserSchema = z
   .object({
+    userId: z.string().min(1, 'User ID is required'),
     name: z.string().min(1, 'Name is required'),
     email: z.email(),
+    department: z.string().min(1, 'Department is required'),
     phone: z.string().optional(),
     password: z.string().min(6, 'Password must be at least 6 characters'),
     role: roleSchema,
@@ -64,8 +66,10 @@ export const createUserSchema = z
 
 export const updateUserSchema = z
   .object({
+    userId: z.string().min(1).optional(),
     name: z.string().min(1).optional(),
     email: z.email().optional(),
+    department: z.string().min(1).optional(),
     phone: z.string().optional(),
     role: roleSchema.optional(),
     farmId: objectIdSchema.nullish(),

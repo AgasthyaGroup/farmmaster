@@ -32,19 +32,21 @@ export async function POST(req: NextRequest) {
       if (!parsedBody.success) {
         return errorResponse(parsedBody.error.issues[0]?.message || 'Invalid request body', 400);
       }
-      const { name, email, phone, password, role, farmId } = parsedBody.data;
+      const { userId, name, email, department, phone, password, role, farmId } = parsedBody.data;
 
       await dbConnect();
       
-      const existingUser = await User.findOne({ email });
+      const existingUser = await User.findOne({ $or: [{ email }, { userId }] });
       if (existingUser) {
-        return errorResponse('Email already registered', 400);
+        return errorResponse('Email or User ID already registered', 400);
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
       const user = await User.create({
+        userId,
         name,
         email,
+        department,
         phone,
         password: hashedPassword,
         role,

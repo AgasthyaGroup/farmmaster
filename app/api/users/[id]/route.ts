@@ -45,6 +45,19 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
       await dbConnect();
 
+      if (parsedBody.data.email || parsedBody.data.userId) {
+        const existingUser = await User.findOne({
+          _id: { $ne: parsedId.data },
+          $or: [
+            ...(parsedBody.data.email ? [{ email: parsedBody.data.email }] : []),
+            ...(parsedBody.data.userId ? [{ userId: parsedBody.data.userId }] : []),
+          ],
+        });
+        if (existingUser) {
+          return errorResponse('Email or User ID already registered', 400);
+        }
+      }
+
       const user = await User.findByIdAndUpdate(
         parsedId.data,
         parsedBody.data,

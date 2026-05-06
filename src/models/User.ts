@@ -2,8 +2,10 @@ import mongoose, { Schema } from 'mongoose';
 
 const UserSchema = new Schema(
   {
+    userId: { type: String, required: true, unique: true, trim: true },
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    department: { type: String, required: true, trim: true },
     phone: { type: String, required: false, default: '' },
     password: { type: String, required: true, select: false },
     role: {
