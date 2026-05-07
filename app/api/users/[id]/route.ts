@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import dbConnect from '@/src/database/dbConnection';
 import User from '@/src/models/User';
+import Department from '@/src/models/Department';
+import Role from '@/src/models/Role';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, notFoundResponse } from '@/src/utils/responses';
 import { objectIdSchema, updateUserSchema } from '@/src/utils/validation';
@@ -58,10 +60,24 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         }
       }
 
+      if (parsedBody.data.department) {
+        const existingDepartment = await Department.findOne({ name: parsedBody.data.department });
+        if (!existingDepartment) {
+          return errorResponse('Invalid department', 400);
+        }
+      }
+
+      if (parsedBody.data.role) {
+        const existingRole = await Role.findOne({ name: parsedBody.data.role });
+        if (!existingRole) {
+          return errorResponse('Invalid role', 400);
+        }
+      }
+
       const user = await User.findByIdAndUpdate(
         parsedId.data,
         parsedBody.data,
-        { new: true }
+        { new: true, runValidators: true }
       );
 
       if (!user) return notFoundResponse('User not found');

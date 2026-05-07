@@ -12,6 +12,12 @@ interface Role {
   status: boolean;
 }
 
+const getRoleDisplayName = (roleName: string) => {
+  if (roleName === 'SUPER_ADMIN') return 'SUPERADMIN';
+  if (roleName === 'FARM_ADMIN') return 'ADMIN';
+  return roleName;
+};
+
 export default function RolesPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +34,21 @@ export default function RolesPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const result = await res.json();
-      if (result.success) setRoles(result.data);
+      if (result.success) {
+        const orderedRoles = [...result.data].sort((a, b) => {
+          const priority = (name: string) => {
+            if (name === 'SUPER_ADMIN') return 0;
+            if (name === 'FARM_ADMIN') return 1;
+            return 2;
+          };
+          return priority(a.name) - priority(b.name);
+        });
+        setRoles(orderedRoles);
+      } else {
+        setMessage({ type: 'error', text: result.error || 'Failed to fetch roles' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Failed to fetch roles' });
     } finally {
       setLoading(false);
     }
@@ -193,7 +213,7 @@ export default function RolesPage() {
             <tbody>
               {roles.map((role) => (
                 <tr key={role._id} className="border-t border-slate-100">
-                  <td className="px-5 py-3 text-sm font-bold text-slate-900">{role.name}</td>
+                  <td className="px-5 py-3 text-sm font-bold text-slate-900">{getRoleDisplayName(role.name)}</td>
                   <td className="px-5 py-3 text-sm text-slate-600">{role.description || '-'}</td>
                   <td className="px-5 py-3 text-sm text-slate-600">
                     {(role.permissions || []).length > 0 ? role.permissions.join(', ') : '-'}
@@ -225,6 +245,13 @@ export default function RolesPage() {
                   </td>
                 </tr>
               ))}
+              {roles.length === 0 && (
+                <tr className="border-t border-slate-100">
+                  <td colSpan={5} className="px-5 py-8 text-center text-sm font-semibold text-slate-500">
+                    No roles found
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

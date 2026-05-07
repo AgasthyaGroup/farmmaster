@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Beef, Lock, Mail, Loader2, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -20,7 +20,7 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ identifier, password }),
       });
 
       const result = await res.json();
@@ -62,12 +62,12 @@ export default function LoginPage() {
                 <Mail className="h-6 w-6" />
               </div>
               <input
-                type="email"
+                type="text"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 className="block w-full pl-20 pr-8 py-6 bg-slate-50 border border-slate-100 rounded-[32px] font-bold text-slate-900 placeholder-slate-300 focus:outline-none focus:ring-8 focus:ring-blue-500/5 focus:bg-white transition-all duration-300 shadow-inner"
-                placeholder="admin@farmmaster.com"
+                placeholder="Email or User ID"
               />
             </div>
           </div>

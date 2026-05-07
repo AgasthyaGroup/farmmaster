@@ -12,11 +12,17 @@ export async function POST(req: NextRequest) {
     if (!parsedBody.success) {
       return errorResponse(parsedBody.error.issues[0]?.message || 'Invalid request body', 400);
     }
-    const { email, password } = parsedBody.data;
+    const { identifier, password } = parsedBody.data;
 
     await dbConnect();
 
-    const user = await User.findOne({ email }).select('+password');
+    const normalizedIdentifier = identifier.trim();
+    const user = await User.findOne({
+      $or: [
+        { email: normalizedIdentifier.toLowerCase() },
+        { userId: normalizedIdentifier },
+      ],
+    }).select('+password');
     if (!user || !user.status) {
       return errorResponse('Invalid credentials or account disabled', 401);
     }
@@ -39,6 +45,7 @@ export async function POST(req: NextRequest) {
     return successResponse({
       user: {
         id: user._id,
+        userId: user.userId,
         name: user.name,
         email: user.email,
         role: user.role,

@@ -15,7 +15,7 @@ const DEFAULT_ROLES = [
   {
     name: 'FARM_ADMIN',
     description: 'Access to all modules except user management',
-    permissions: ['DASHBOARD', 'FARMS', 'SHEDS', 'TAGS', 'CATTLE', 'ROLE_MANAGEMENT'],
+    permissions: ['DASHBOARD', 'FARMS', 'SHEDS', 'TAGS', 'CATTLE'],
     isSystem: true,
     status: true,
   },
@@ -26,7 +26,9 @@ async function ensureDefaultRoles() {
     await Role.updateOne(
       { name: role.name },
       {
-        $setOnInsert: role,
+        $setOnInsert: {
+          name: role.name,
+        },
         $set: {
           description: role.description,
           permissions: role.permissions,

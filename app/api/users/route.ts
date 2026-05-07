@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/src/database/dbConnection';
 import User from '@/src/models/User';
+import Department from '@/src/models/Department';
+import Role from '@/src/models/Role';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
 import { createUserSchema } from '@/src/utils/validation';
@@ -39,6 +41,16 @@ export async function POST(req: NextRequest) {
       const existingUser = await User.findOne({ $or: [{ email }, { userId }] });
       if (existingUser) {
         return errorResponse('Email or User ID already registered', 400);
+      }
+
+      const existingDepartment = await Department.findOne({ name: department });
+      if (!existingDepartment) {
+        return errorResponse('Invalid department', 400);
+      }
+
+      const existingRole = await Role.findOne({ name: role });
+      if (!existingRole) {
+        return errorResponse('Invalid role', 400);
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);

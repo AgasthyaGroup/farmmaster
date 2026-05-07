@@ -4,11 +4,11 @@ const objectIdRegex = /^[0-9a-fA-F]{24}$/;
 
 export const objectIdSchema = z.string().regex(objectIdRegex, 'Invalid ObjectId');
 
-export const roleSchema = z.enum(['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE']);
+export const roleSchema = z.string().min(1, 'Role is required');
 export const cattleTypeSchema = z.enum(['COW', 'BUFFALO', 'CALF']);
 
 export const loginSchema = z.object({
-  email: z.email(),
+  identifier: z.string().min(1, 'Email or User ID is required'),
   password: z.string().min(1, 'Password is required'),
 });
 

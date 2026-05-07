@@ -9,6 +9,7 @@ import {
   Tag, 
   Users, 
   ShieldCheck,
+  Building2,
   Beef as CattleIcon,
   LogOut,
   Menu,
@@ -29,6 +30,7 @@ const sidebarItems = [
   { name: 'Sheds', icon: Warehouse, href: '/dashboard/sheds' },
   { name: 'Tags', icon: Tag, href: '/dashboard/tags' },
   { name: 'Cattle', icon: CattleIcon, href: '/dashboard/cattle' },
+  { name: 'Departments', icon: Building2, href: '/dashboard/departments' },
   { name: 'User Management', icon: Users, href: '/dashboard/users' },
   { name: 'Role Management', icon: ShieldCheck, href: '/dashboard/roles' },
 ];

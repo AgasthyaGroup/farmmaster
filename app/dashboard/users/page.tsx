@@ -31,9 +31,21 @@ interface Farm {
   name: string;
 }
 
+interface Department {
+  _id: string;
+  name: string;
+}
+
+interface Role {
+  _id: string;
+  name: string;
+}
+
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [farms, setFarms] = useState<Farm[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -53,16 +65,22 @@ export default function UsersPage() {
   const fetchData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const [usersRes, farmsRes] = await Promise.all([
+      const [usersRes, farmsRes, departmentsRes, rolesRes] = await Promise.all([
         fetch('/api/users', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/farms', { headers: { Authorization: `Bearer ${token}` } })
+        fetch('/api/farms', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/departments', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/roles', { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       
       const usersResult = await usersRes.json();
       const farmsResult = await farmsRes.json();
+      const departmentsResult = await departmentsRes.json();
+      const rolesResult = await rolesRes.json();
       
       if (usersResult.success) setUsers(usersResult.data);
       if (farmsResult.success) setFarms(farmsResult.data);
+      if (departmentsResult.success) setDepartments(departmentsResult.data);
+      if (rolesResult.success) setRoles(rolesResult.data);
     } catch (error) {
       console.error('Failed to fetch data', error);
     } finally {
@@ -289,13 +307,19 @@ export default function UsersPage() {
                 </div>
                 <div className="space-y-4">
                   <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">Department</label>
-                  <input
+                  <select
                     required
                     value={newUser.department}
                     onChange={(e) => setNewUser({...newUser, department: e.target.value})}
-                    placeholder="Enter department"
                     className="w-full bg-slate-50 border border-slate-100 rounded-[16px] px-4 py-3 text-slate-900 font-bold focus:ring-4 focus:ring-slate-900/5 focus:bg-white transition-all text-sm shadow-inner"
-                  />
+                  >
+                    <option value="" disabled>Select department</option>
+                    {departments.map((department) => (
+                      <option key={department._id} value={department.name}>
+                        {department.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-4">
                   <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">Mobile (Optional)</label>
@@ -348,9 +372,11 @@ export default function UsersPage() {
                     onChange={(e) => setNewUser({...newUser, role: e.target.value as any})}
                     className="w-full bg-slate-50 border border-slate-100 rounded-[16px] px-4 py-3 text-slate-900 font-black focus:ring-4 focus:ring-slate-900/5 focus:bg-white transition-all appearance-none shadow-inner text-sm"
                   >
-                    <option value="FARM_ADMIN" className="bg-white">Unit Controller</option>
-                    <option value="INCHARGE" className="bg-white">Module Lead</option>
-                    <option value="SUPER_ADMIN" className="bg-white">Master Authority</option>
+                    {roles.map((role) => (
+                      <option key={role._id} value={role.name} className="bg-white">
+                        {role.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 {newUser.role !== 'SUPER_ADMIN' && (
