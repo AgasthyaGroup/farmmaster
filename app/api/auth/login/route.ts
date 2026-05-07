@@ -7,13 +7,20 @@ import { successResponse, errorResponse } from '@/src/utils/responses';
 import { loginSchema } from '@/src/utils/validation';
 
 export async function POST(req: NextRequest) {
+  let body: unknown;
   try {
-    const parsedBody = loginSchema.safeParse(await req.json());
-    if (!parsedBody.success) {
-      return errorResponse(parsedBody.error.issues[0]?.message || 'Invalid request body', 400);
-    }
-    const { identifier, password } = parsedBody.data;
+    body = await req.json();
+  } catch {
+    return errorResponse('Request body must be valid JSON', 400);
+  }
 
+  const parsedBody = loginSchema.safeParse(body);
+  if (!parsedBody.success) {
+    return errorResponse(parsedBody.error.issues[0]?.message || 'Invalid request body', 400);
+  }
+  const { identifier, password } = parsedBody.data;
+
+  try {
     await dbConnect();
 
     const normalizedIdentifier = identifier.trim();
@@ -56,7 +63,8 @@ export async function POST(req: NextRequest) {
         refreshToken,
       },
     }, 'Login successful');
-  } catch (error: any) {
-    return errorResponse(error.message || 'Something went wrong', 500);
+  } catch (error) {
+    console.error('[POST /api/auth/login] unexpected error:', error);
+    return errorResponse('Something went wrong. Please try again later.', 500);
   }
 }

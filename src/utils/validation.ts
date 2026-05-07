@@ -8,8 +8,12 @@ export const roleSchema = z.string().min(1, 'Role is required');
 export const cattleTypeSchema = z.enum(['COW', 'BUFFALO', 'CALF']);
 
 export const loginSchema = z.object({
-  identifier: z.string().min(1, 'Email or User ID is required'),
-  password: z.string().min(1, 'Password is required'),
+  identifier: z
+    .string({ error: 'Email or User ID is required' })
+    .min(1, 'Email or User ID is required'),
+  password: z
+    .string({ error: 'Password is required' })
+    .min(1, 'Password is required'),
 });
 
 export const createFarmSchema = z.object({
