@@ -46,7 +46,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     const token = localStorage.getItem('token');
     
     if (!storedUser || !token) {
-      router.push('/login');
+      router.push('/');
       return;
     }
     
@@ -64,7 +64,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    router.push('/login');
+    router.push('/');
   };
 
   if (!user) return null;
