@@ -19,6 +19,13 @@ import {
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import {
+  installAuthFetchInterceptor,
+  isTokenExpired,
+  logoutAndRedirect,
+} from '@/src/utils/clientAuth';
+
+const TOKEN_CHECK_INTERVAL_MS = 30_000;
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -44,14 +51,27 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token');
-    
-    if (!storedUser || !token) {
-      router.push('/');
+
+    if (!storedUser || !token || isTokenExpired(token)) {
+      logoutAndRedirect();
       return;
     }
-    
+
     setUser(JSON.parse(storedUser));
-  }, [router]);
+
+    const removeInterceptor = installAuthFetchInterceptor();
+    const intervalId = window.setInterval(() => {
+      const currentToken = localStorage.getItem('token');
+      if (!currentToken || isTokenExpired(currentToken)) {
+        logoutAndRedirect();
+      }
+    }, TOKEN_CHECK_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+      removeInterceptor();
+    };
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -62,9 +82,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }, [user, pathname, router]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    router.push('/');
+    logoutAndRedirect();
   };
 
   if (!user) return null;
