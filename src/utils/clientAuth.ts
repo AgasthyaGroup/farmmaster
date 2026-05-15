@@ -42,7 +42,7 @@ export function isTokenExpired(token: string | null): boolean {
 export function logoutAndRedirect(): void {
   clearAuth();
   if (typeof window !== 'undefined') {
-    window.location.replace('/');
+    window.location.replace('/login');
   }
 }
 

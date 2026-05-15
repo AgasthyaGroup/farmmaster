@@ -6,7 +6,7 @@ import { successResponse, errorResponse, createdResponse } from '@/src/utils/res
 import { createFarmSchema } from '@/src/utils/validation';
 
 export async function GET(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN'], async () => {
     try {
       await dbConnect();
       const farms = await Farm.find({ isDeleted: false }).sort({ createdAt: -1 });
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN'], async () => {
     try {
       const parsedBody = createFarmSchema.safeParse(await req.json());
       if (!parsedBody.success) {

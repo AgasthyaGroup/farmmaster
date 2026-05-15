@@ -17,7 +17,7 @@ export default function HomePage() {
     const user = localStorage.getItem('user');
 
     if (token && user) {
-      router.replace('/dashboard');
+      router.replace('/');
       return;
     }
     setCheckingAuth(false);
@@ -40,7 +40,7 @@ export default function HomePage() {
       if (result.success) {
         localStorage.setItem('token', result.data.tokens.accessToken);
         localStorage.setItem('user', JSON.stringify(result.data.user));
-        router.push('/dashboard');
+        router.push('/');
       } else {
         setError(result.error || 'Login failed');
       }

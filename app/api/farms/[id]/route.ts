@@ -6,7 +6,7 @@ import { successResponse, errorResponse, notFoundResponse } from '@/src/utils/re
 import { objectIdSchema, updateFarmSchema } from '@/src/utils/validation';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  return withAuth(req, ['SUPER_ADMIN'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN'], async () => {
     try {
       const { id } = await params;
       const parsedId = objectIdSchema.safeParse(id);
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  return withAuth(req, ['SUPER_ADMIN'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN'], async () => {
     try {
       const { id } = await params;
       const parsedId = objectIdSchema.safeParse(id);
@@ -52,7 +52,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  return withAuth(req, ['SUPER_ADMIN'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN'], async () => {
     try {
       const { id } = await params;
       const parsedId = objectIdSchema.safeParse(id);

@@ -32,14 +32,14 @@ function cn(...inputs: ClassValue[]) {
 }
 
 const sidebarItems = [
-  { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-  { name: 'Farms', icon: Tractor, href: '/dashboard/farms' },
-  { name: 'Sheds', icon: Warehouse, href: '/dashboard/sheds' },
-  { name: 'Tags', icon: Tag, href: '/dashboard/tags' },
-  { name: 'Cattle', icon: CattleIcon, href: '/dashboard/cattle' },
-  { name: 'Departments', icon: Building2, href: '/dashboard/departments' },
-  { name: 'User Management', icon: Users, href: '/dashboard/users' },
-  { name: 'Role Management', icon: ShieldCheck, href: '/dashboard/roles' },
+  { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
+  { name: 'Farms', icon: Tractor, href: '/farms' },
+  { name: 'Sheds', icon: Warehouse, href: '/sheds' },
+  { name: 'Tags', icon: Tag, href: '/tags' },
+  { name: 'Cattle', icon: CattleIcon, href: '/cattle' },
+  { name: 'Departments', icon: Building2, href: '/departments' },
+  { name: 'User Management', icon: Users, href: '/users' },
+  { name: 'Role Management', icon: ShieldCheck, href: '/roles' },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -76,8 +76,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) return;
     const isFarmAdmin = user.role === 'FARM_ADMIN';
-    if (isFarmAdmin && (pathname === '/dashboard/users' || pathname === '/dashboard/roles')) {
-      router.replace('/dashboard');
+    if (isFarmAdmin && (pathname === '/users' || pathname === '/roles')) {
+      router.replace('/');
     }
   }, [user, pathname, router]);
 
@@ -88,7 +88,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   if (!user) return null;
 
   const allowedSidebarItems = sidebarItems.filter((item) => {
-    if (user.role === 'FARM_ADMIN' && (item.href === '/dashboard/users' || item.href === '/dashboard/roles')) {
+    if (user.role === 'FARM_ADMIN' && (item.href === '/users' || item.href === '/roles')) {
       return false;
     }
     return true;
