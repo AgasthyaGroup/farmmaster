@@ -2,13 +2,13 @@ import mongoose, { Schema } from 'mongoose';
 
 const CattleSchema = new Schema(
   {
-    farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: true },
+    farmId: { type: String, required: true },
     name: { type: String, required: true },
     code: { type: String, required: true },
     date: { type: Date, required: false },
-    tagId: { type: Schema.Types.ObjectId, ref: 'Tag', required: true },
+    tagId: { type: String, required: true },
     type: { type: String, enum: ['COW', 'COW_CALF', 'BUFFALO', 'BUFFALO_CALF'], required: true },
-    shedId: { type: Schema.Types.ObjectId, ref: 'Shed', required: true },
+    shedId: { type: String, required: true },
     lineNo: { type: Number, required: false },
     status: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
@@ -16,9 +16,9 @@ const CattleSchema = new Schema(
     gender: { type: String, enum: ['MALE', 'FEMALE'], required: true },
     dateOfBirth: { type: Date, required: false },
     age: { type: Number, required: false },
-    dameId: { type: Schema.Types.ObjectId, ref: 'Cattle', required: false },
+    dameId: { type: String, required: false },
     dameBreed: { type: String, required: false },
-    sireId: { type: Schema.Types.ObjectId, ref: 'Cattle', required: false },
+    sireId: { type: String, required: false },
     sireBreed: { type: String, required: false },
     noOfCalvings: { type: Number, required: false, default: 0 },
     farmBorn: { type: Boolean, default: false },

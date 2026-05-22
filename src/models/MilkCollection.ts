@@ -3,8 +3,8 @@ import mongoose, { Schema } from 'mongoose';
 const MilkCollectionSchema = new Schema(
   {
     date: { type: Date, required: true },
-    shedId: { type: Schema.Types.ObjectId, ref: 'Shed', required: true },
-    tagId: { type: Schema.Types.ObjectId, ref: 'Tag', required: true },
+    shedId: { type: String, required: true },
+    tagId: { type: String, required: true },
     session: { type: String, enum: ['MORNING', 'EVENING'], required: true },
     quantity: { type: Number, required: true, default: 0 },
     selfConsumption: { type: Number, required: true, default: 0 },

@@ -3,8 +3,8 @@ import mongoose, { Schema } from 'mongoose';
 const DailyFeedingSchema = new Schema(
   {
     date: { type: Date, required: true },
-    shedId: { type: Schema.Types.ObjectId, ref: 'Shed', required: true },
-    animalId: { type: Schema.Types.ObjectId, ref: 'Cattle', required: false },
+    shedId: { type: String, required: true },
+    animalId: { type: String, required: false },
     greenGrass: { type: Number, required: false, default: 0 },
     dryGrass: { type: Number, required: false, default: 0 },
     cottonCake: { type: Number, required: false, default: 0 },
