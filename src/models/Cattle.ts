@@ -2,26 +2,26 @@ import mongoose, { Schema } from 'mongoose';
 
 const CattleSchema = new Schema(
   {
-    farmId: { type: String, required: true },
-    name: { type: String, required: true },
-    code: { type: String, required: true },
+    farmId: { type: String, required: false },
+    name: { type: String, required: false },
+    code: { type: String, required: false },
     date: { type: Date, required: false },
-    tagId: { type: String, required: true },
-    type: { type: String, enum: ['COW', 'COW_CALF', 'BUFFALO', 'BUFFALO_CALF'], required: true },
-    shedId: { type: String, required: true },
+    tag: { type: String, required: true },
+    cattleType: { type: String, required: true },
+    shed: { type: String, required: true },
     lineNo: { type: Number, required: false },
-    status: { type: Boolean, default: true },
+    status: { type: String, default: 'Active' },
     isDeleted: { type: Boolean, default: false },
-    breed: { type: String, required: true },
-    gender: { type: String, enum: ['MALE', 'FEMALE'], required: true },
+    breed: { type: String, required: false },
+    gender: { type: String, required: false },
     dateOfBirth: { type: Date, required: false },
-    age: { type: Number, required: false },
+    age: { type: String, required: false },
     dameId: { type: String, required: false },
     dameBreed: { type: String, required: false },
     sireId: { type: String, required: false },
     sireBreed: { type: String, required: false },
-    noOfCalvings: { type: Number, required: false, default: 0 },
-    farmBorn: { type: Boolean, default: false },
+    calvings: { type: Number, required: false, default: 0 },
+    farmBorn: { type: String, default: 'No' },
     color: { type: String, required: false },
     production: { type: Number, required: false },
     milkCollection: { type: Number, required: false },
@@ -36,7 +36,6 @@ const CattleSchema = new Schema(
   { timestamps: true }
 );
 
-CattleSchema.index({ farmId: 1, code: 1 }, { unique: true });
-CattleSchema.index({ tagId: 1 }, { unique: true });
+CattleSchema.index({ farmId: 1, tag: 1 }, { unique: true });
 
 export default mongoose.models.Cattle || mongoose.model('Cattle', CattleSchema);
