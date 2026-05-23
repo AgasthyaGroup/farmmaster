@@ -25,31 +25,19 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN'], async () => {
     try {
-      const parsedBody = createCattleSchema.safeParse(await req.json());
-      if (!parsedBody.success) {
-        return errorResponse(parsedBody.error.issues[0]?.message || 'Invalid request body', 400);
-      }
-      const { farmId, name, code, tagId, type, shedId } = parsedBody.data;
-
+      const body = await req.json();
       await dbConnect();
+      
+      const cattle = await Cattle.create(body);
 
-      // Ensure tag is available
-      const tag = await Tag.findById(tagId);
-      if (!tag || tag.status === 'ASSIGNED') {
-        return errorResponse('Tag is not available or does not exist', 400);
+      // Optionally update Tag if tag field is present and exists
+      if (body.tag) {
+        const tag = await Tag.findOne({ tagId: body.tag });
+        if (tag) {
+          tag.status = 'ASSIGNED';
+          await tag.save();
+        }
       }
-
-      const cattle = await Cattle.create({
-        farmId,
-        name,
-        code,
-        tagId,
-        type,
-        shedId,
-      });
-
-      // Update tag status
-      await Tag.findByIdAndUpdate(tagId, { status: 'ASSIGNED' });
 
       return createdResponse(cattle, 'Cattle registered successfully');
     } catch (error: any) {
