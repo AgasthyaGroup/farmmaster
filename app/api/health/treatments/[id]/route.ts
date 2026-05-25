@@ -9,7 +9,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     try {
       const { id } = await params;
       await dbConnect();
-      const record = await TreatmentLog.findById(id).populate(['tagId', 'shedId', 'animalId']);
+      const record = await TreatmentLog.findById(id);
       if (!record || record.isDeleted) {
         return errorResponse('TreatmentLog not found', 404);
       }

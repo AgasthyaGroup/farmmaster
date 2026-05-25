@@ -11,9 +11,6 @@ export async function GET(req: NextRequest) {
     try {
       await dbConnect();
       const cattle = await Cattle.find({ isDeleted: false })
-        .populate('farmId')
-        .populate('tagId')
-        .populate('shedId')
         .sort({ createdAt: -1 });
       return successResponse(cattle, 'Cattle fetched successfully');
     } catch (error: any) {

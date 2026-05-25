@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE'], async () => {
     try {
       await dbConnect();
-      const records = await VaccinationLog.find({ isDeleted: false }).populate(['tagId', 'shedId', 'animalId']).sort({ createdAt: -1 });
+      const records = await VaccinationLog.find({ isDeleted: false }).sort({ createdAt: -1 });
       return successResponse(records, 'VaccinationLog fetched successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);

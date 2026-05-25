@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE'], async () => {
     try {
       await dbConnect();
-      const records = await MilkCollection.find({ isDeleted: false }).populate(['shedId', 'tagId']).sort({ createdAt: -1 });
+      const records = await MilkCollection.find({ isDeleted: false }).sort({ createdAt: -1 });
       return successResponse(records, 'MilkCollection fetched successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);
