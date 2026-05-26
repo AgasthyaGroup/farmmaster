@@ -11,6 +11,7 @@ const VaccinationLogSchema = new Schema(
     manufactureDate: { type: Date, required: true },
     expiryDate: { type: Date, required: true },
     treatmentOrStatus: { type: String, required: false },
+    farmId: { type: String, required: false },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }

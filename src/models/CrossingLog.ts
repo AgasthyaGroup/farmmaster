@@ -17,6 +17,7 @@ const CrossingLogSchema = new Schema(
     breedType: { type: String, required: false },
     'heat monitoring 1st notification': { type: Date, required: false },
     'heat monitoring 2nd notification': { type: Date, required: false },
+    farmId: { type: String, required: false },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }

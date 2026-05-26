@@ -8,6 +8,7 @@ const FeedInventorySchema = new Schema(
     usage: { type: Number, required: true, default: 0 },
     remainingStock: { type: Number, required: true, default: 0 },
     purchaseDate: { type: Date, required: false },
+    farmId: { type: String, required: false },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }
