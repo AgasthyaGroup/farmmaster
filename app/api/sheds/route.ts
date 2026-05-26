@@ -27,14 +27,31 @@ export async function POST(req: NextRequest) {
       const { farmId, name, code, lines, capacity, remarks } = parsedBody.data;
 
       await dbConnect();
-      const shed = await Shed.create({
-        farmId,
-        name,
-        code,
-        lines,
-        capacity,
-        remarks,
-      });
+
+      // Check if a shed with the same farmId and code already exists (even if deleted)
+      const existingShed = await Shed.findOne({ farmId, code });
+      
+      let shed;
+      if (existingShed) {
+        if (!existingShed.isDeleted) {
+          return errorResponse('A shed with this code already exists for this farm.', 400);
+        }
+        // Revive the soft-deleted shed
+        shed = await Shed.findByIdAndUpdate(
+          existingShed._id,
+          { name, lines, capacity, remarks, isDeleted: false },
+          { new: true }
+        );
+      } else {
+        shed = await Shed.create({
+          farmId,
+          name,
+          code,
+          lines,
+          capacity,
+          remarks,
+        });
+      }
 
       return createdResponse(shed, 'Shed created successfully');
     } catch (error: any) {
