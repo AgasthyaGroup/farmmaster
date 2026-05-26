@@ -30,7 +30,15 @@ export async function POST(req: NextRequest) {
       
       const existingFarm = await Farm.findOne({ code });
       if (existingFarm) {
-        return errorResponse('Farm code already exists', 400);
+        if (!existingFarm.isDeleted) {
+          return errorResponse('Farm code already exists', 400);
+        }
+        const farm = await Farm.findByIdAndUpdate(
+          existingFarm._id,
+          { name, code, address, location, isDeleted: false },
+          { new: true }
+        );
+        return createdResponse(farm, 'Farm created successfully');
       }
 
       const farm = await Farm.create({

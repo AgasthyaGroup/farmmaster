@@ -39,10 +39,7 @@ export async function POST(req: NextRequest) {
       await dbConnect();
       
       const existingUser = await User.findOne({ $or: [{ email }, { userId }] });
-      if (existingUser) {
-        return errorResponse('Email or User ID already registered', 400);
-      }
-
+      
       const existingDepartment = await Department.findOne({ name: department });
       if (!existingDepartment) {
         return errorResponse('Invalid department', 400);
@@ -52,8 +49,32 @@ export async function POST(req: NextRequest) {
       if (!existingRole) {
         return errorResponse('Invalid role', 400);
       }
-
+      
       const hashedPassword = await bcrypt.hash(password, 10);
+      
+      if (existingUser) {
+        if (existingUser.status !== false) {
+          return errorResponse('Email or User ID already registered', 400);
+        }
+        // Revive soft-deleted user
+        const user = await User.findByIdAndUpdate(
+          existingUser._id,
+          {
+            userId,
+            name,
+            email,
+            department,
+            phone,
+            password: hashedPassword,
+            role,
+            farmId: role === 'SUPER_ADMIN' ? null : farmId,
+            status: true
+          },
+          { new: true }
+        );
+        return createdResponse(sanitizeUser(user), 'User created successfully');
+      }
+
       const user = await User.create({
         userId,
         name,
@@ -63,6 +84,7 @@ export async function POST(req: NextRequest) {
         password: hashedPassword,
         role,
         farmId: role === 'SUPER_ADMIN' ? null : farmId,
+        status: true
       });
 
       return createdResponse(sanitizeUser(user), 'User created successfully');

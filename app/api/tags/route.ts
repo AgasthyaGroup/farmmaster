@@ -30,7 +30,15 @@ export async function POST(req: NextRequest) {
       
       const existingTag = await Tag.findOne({ code });
       if (existingTag) {
-        return errorResponse('Tag code already exists', 400);
+        if (!existingTag.isDeleted) {
+          return errorResponse('Tag code already exists', 400);
+        }
+        const tag = await Tag.findByIdAndUpdate(
+          existingTag._id,
+          { farmId, code, type, isDeleted: false },
+          { new: true }
+        );
+        return createdResponse(tag, 'Tag created successfully');
       }
 
       const tag = await Tag.create({

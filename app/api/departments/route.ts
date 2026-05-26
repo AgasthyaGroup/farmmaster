@@ -54,7 +54,16 @@ export async function POST(req: NextRequest) {
       await dbConnect();
       const existingDepartment = await Department.findOne({ name });
       if (existingDepartment) {
-        return errorResponse('Department already exists', 400);
+        if (existingDepartment.status !== false) {
+          return errorResponse('Department already exists', 400);
+        }
+        // Revive the soft-deleted department
+        const department = await Department.findByIdAndUpdate(
+          existingDepartment._id,
+          { status: true },
+          { new: true }
+        );
+        return createdResponse(department, 'Department created successfully');
       }
 
       const department = await Department.create({ name, status: true });

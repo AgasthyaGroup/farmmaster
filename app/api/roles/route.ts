@@ -71,7 +71,15 @@ export async function POST(req: NextRequest) {
       await dbConnect();
       const existingRole = await Role.findOne({ name });
       if (existingRole) {
-        return errorResponse('Role already exists', 400);
+        if (existingRole.status !== false) {
+          return errorResponse('Role already exists', 400);
+        }
+        const role = await Role.findByIdAndUpdate(
+          existingRole._id,
+          { description, permissions, isSystem: false, status: true },
+          { new: true }
+        );
+        return createdResponse(role, 'Role created successfully');
       }
 
       const role = await Role.create({
