@@ -4,10 +4,10 @@ import Cattle from '@/src/models/Cattle';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse } from '@/src/utils/responses';
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN'], async () => {
     try {
-      const { id } = params;
+      const { id } = await params;
       const body = await req.json();
       await dbConnect();
       
@@ -23,10 +23,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   });
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN'], async () => {
     try {
-      const { id } = params;
+      const { id } = await params;
       await dbConnect();
       
       const deletedCattle = await Cattle.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
