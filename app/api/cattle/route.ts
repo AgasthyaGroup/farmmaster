@@ -25,7 +25,26 @@ export async function POST(req: NextRequest) {
       const body = await req.json();
       await dbConnect();
       
-      const cattle = await Cattle.create(body);
+      // Check if a cattle with the same tag and farmId already exists
+      const query: any = { tag: body.tag };
+      if (body.farmId) query.farmId = body.farmId;
+      
+      const existingCattle = await Cattle.findOne(query);
+      
+      let cattle;
+      if (existingCattle) {
+        if (!existingCattle.isDeleted) {
+          return errorResponse('A cattle with this Tag ID already exists.', 400);
+        }
+        // Revive the soft-deleted cattle
+        cattle = await Cattle.findByIdAndUpdate(
+          existingCattle._id,
+          { ...body, isDeleted: false },
+          { new: true }
+        );
+      } else {
+        cattle = await Cattle.create(body);
+      }
 
       // Optionally update Tag if tag field is present and exists
       if (body.tag) {
