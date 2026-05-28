@@ -3,6 +3,9 @@ import dbConnect from '@/src/database/dbConnection';
 import CrossingLog from '@/src/models/CrossingLog';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
+import { objectIdSchema } from '@/src/utils/validation';
+import { z } from 'zod';
+
 
 export async function GET(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE'], async () => {
@@ -16,10 +19,20 @@ export async function GET(req: NextRequest) {
   });
 }
 
+const crossingSchema = z.object({
+  farmId: objectIdSchema
+}).passthrough();
+
 export async function POST(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE'], async () => {
     try {
-      const body = await req.json();
+      let body = await req.json();
+      const parsedBody = crossingSchema.safeParse(body);
+      if (!parsedBody.success) {
+        return errorResponse(parsedBody.error.issues[0]?.message || 'Invalid farmId', 400);
+      }
+      body = parsedBody.data;
+
       await dbConnect();
       const record = await CrossingLog.create(body);
       return createdResponse(record, 'CrossingLog created successfully');

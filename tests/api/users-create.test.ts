@@ -35,8 +35,10 @@ describe('POST /api/users', () => {
     const req = new Request('http://localhost/api/users', {
       method: 'POST',
       body: JSON.stringify({
+        userId: 'fadmin1',
         name: 'Farm Admin',
         email: 'admin@example.com',
+        department: 'Farming',
         password: 'password123',
         role: 'FARM_ADMIN',
       }),

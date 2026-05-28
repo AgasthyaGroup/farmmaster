@@ -47,6 +47,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
       await dbConnect();
 
+      if (parsedBody.data.password) {
+        const bcrypt = require('bcryptjs');
+        parsedBody.data.password = await bcrypt.hash(parsedBody.data.password, 10);
+      }
+
       if (parsedBody.data.email || parsedBody.data.userId) {
         const existingUser = await User.findOne({
           _id: { $ne: parsedId.data },

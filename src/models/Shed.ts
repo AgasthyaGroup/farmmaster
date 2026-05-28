@@ -2,7 +2,7 @@ import mongoose, { Schema } from 'mongoose';
 
 const ShedSchema = new Schema(
   {
-    farmId: { type: String, required: true },
+    farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: true },
     name: { type: String, required: true },
     code: { type: String, required: true },
     lines: { type: Number, default: 0 },

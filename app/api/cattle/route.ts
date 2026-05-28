@@ -22,7 +22,13 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN'], async () => {
     try {
-      const body = await req.json();
+      let body = await req.json();
+      const parsedBody = createCattleSchema.safeParse(body);
+      if (!parsedBody.success) {
+        return errorResponse(parsedBody.error.issues[0]?.message || 'Invalid data', 400);
+      }
+      body = parsedBody.data;
+
       await dbConnect();
       
       // Check if a cattle with the same tag and farmId already exists

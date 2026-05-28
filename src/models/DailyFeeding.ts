@@ -14,7 +14,7 @@ const DailyFeedingSchema = new Schema(
     salt: { type: Number, required: false, default: 0 },
     oralCalcium: { type: Number, required: false, default: 0 },
     mineralMixture: { type: Number, required: false, default: 0 },
-    farmId: { type: String, required: false },
+    farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: false },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }

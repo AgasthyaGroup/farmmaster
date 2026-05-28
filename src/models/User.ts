@@ -14,7 +14,7 @@ const UserSchema = new Schema(
       required: true,
       default: 'SUPER_ADMIN', // Usually for the first user
     },
-    farmId: { type: String, default: null },
+    farmId: { type: Schema.Types.ObjectId, ref: 'Farm', default: null },
     status: { type: Boolean, default: true },
   },
   { timestamps: true }

@@ -9,7 +9,7 @@ const MilkCollectionSchema = new Schema(
     quantity: { type: Number, required: true, default: 0 },
     selfConsumption: { type: Number, required: true, default: 0 },
     dayTotal: { type: Number, required: true, default: 0 },
-    farmId: { type: String, required: false },
+    farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: false },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }

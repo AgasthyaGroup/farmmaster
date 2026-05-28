@@ -10,7 +10,7 @@ const MedicineInventorySchema = new Schema(
     presentStock: { type: Number, required: true, default: 0 },
     purchaseDate: { type: Date, required: false },
     expiryDate: { type: Date, required: false },
-    farmId: { type: String, required: false },
+    farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: false },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }

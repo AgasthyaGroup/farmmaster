@@ -40,12 +40,12 @@ export const createShedSchema = z.object({
 
 export const createCattleSchema = z.object({
   farmId: objectIdSchema,
-  name: z.string().min(1, 'Name is required'),
-  code: z.string().min(1, 'Code is required'),
-  tagId: objectIdSchema,
-  type: cattleTypeSchema,
-  shedId: objectIdSchema,
-});
+  name: z.string().optional(),
+  code: z.string().optional(),
+  tag: z.string().min(1, 'Tag is required'),
+  cattleType: z.string().min(1, 'Cattle Type is required'),
+  shed: z.string().min(1, 'Shed is required'),
+}).passthrough(); // passthrough because frontend sends dynamic fields
 
 export const createUserSchema = z
   .object({
@@ -75,6 +75,7 @@ export const updateUserSchema = z
     email: z.email().optional(),
     department: z.string().min(1).optional(),
     phone: z.string().optional(),
+    password: z.string().min(6).optional(),
     role: roleSchema.optional(),
     farmId: objectIdSchema.nullish(),
     status: z.boolean().optional(),
