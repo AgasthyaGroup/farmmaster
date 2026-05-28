@@ -35,10 +35,10 @@ async function ensureDefaultRoles() {
       {
         $setOnInsert: {
           name: role.name,
-        },
-        $set: {
           description: role.description,
           permissions: role.permissions,
+        },
+        $set: {
           isSystem: role.isSystem,
           status: role.status,
         },

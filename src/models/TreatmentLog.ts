@@ -1,19 +1,11 @@
-import mongoose, { Schema } from 'mongoose';
-
-const TreatmentLogSchema = new Schema(
-  {
-    tagId: { type: String, required: true },
-    date: { type: Date, required: true },
-    shedId: { type: String, required: true },
-    animalId: { type: String, required: true },
-    symptoms: { type: String, required: false },
-    doctor: { type: String, required: false },
-    cost: { type: Number, required: false, default: 0 },
-    healthStatus: { type: String, required: false },
-    farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: false },
-    isDeleted: { type: Boolean, default: false },
-  },
-  { timestamps: true }
-);
-
-export default mongoose.models.TreatmentLog || mongoose.model('TreatmentLog', TreatmentLogSchema);
+/**
+ * src/models/TreatmentLog.ts
+ *
+ * Re-exports from the unified Logs.ts barrel.
+ * The canonical schema definition (with safeDateParse, tag_id index,
+ * start/end date structural validation) lives in Logs.ts.
+ * This file is kept for backward import compatibility
+ * with existing route handlers that import:
+ *   import TreatmentLog from '@/src/models/TreatmentLog'
+ */
+export { TreatmentLog as default } from './Logs';

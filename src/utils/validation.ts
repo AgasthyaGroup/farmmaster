@@ -39,7 +39,7 @@ export const createShedSchema = z.object({
 });
 
 export const createCattleSchema = z.object({
-  farmId: objectIdSchema,
+  farmId: z.string().optional().nullable(),
   name: z.string().optional(),
   code: z.string().optional(),
   tag: z.string().min(1, 'Tag is required'),
@@ -101,3 +101,61 @@ export const updateFarmSchema = z
   .strict();
 
 export const getValidationError = (message: string) => message;
+
+export function sanitizeCattleInput(body: any) {
+  if (!body || typeof body !== 'object') return;
+
+  const dateFields = ['dateOfBirth', 'purchaseDate', 'date'];
+  const numberFields = ['calvings', 'production', 'milkCollection', 'weight', 'purchasePrice', 'lineNo'];
+  const stringFields = [
+    'name', 'code', 'breed', 'gender', 'age', 'dameId', 'dameBreed', 
+    'sireId', 'sireBreed', 'farmBorn', 'color', 'purchaseFrom', 'purchaseBy', 
+    'purchaseRemarks', 'remarks'
+  ];
+
+  for (const field of dateFields) {
+    if (body[field] === '' || body[field] === null || body[field] === undefined || body[field] === '-' || body[field] === 'dd/mm/yyyy') {
+      delete body[field];
+    } else if (typeof body[field] === 'string') {
+      const cleaned = body[field].trim();
+      if (!cleaned || cleaned === '-' || cleaned === 'dd/mm/yyyy') {
+        delete body[field];
+      } else {
+        const parsed = new Date(cleaned);
+        if (isNaN(parsed.getTime())) {
+          delete body[field];
+        } else {
+          body[field] = parsed;
+        }
+      }
+    }
+  }
+
+  for (const field of numberFields) {
+    if (body[field] === '' || body[field] === null || body[field] === undefined || body[field] === '-' || String(body[field]).trim() === '') {
+      delete body[field];
+    } else {
+      const parsed = Number(String(body[field]).trim());
+      if (isNaN(parsed)) {
+        delete body[field];
+      } else {
+        body[field] = parsed;
+      }
+    }
+  }
+
+  for (const field of stringFields) {
+    if (body[field] !== undefined) {
+      if (body[field] === null) {
+        body[field] = '';
+      } else {
+        const cleaned = String(body[field]).trim();
+        if (cleaned === '' || cleaned === '-') {
+          body[field] = '';
+        } else {
+          body[field] = cleaned;
+        }
+      }
+    }
+  }
+}

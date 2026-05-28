@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import dbConnect from '@/src/database/dbConnection';
 import VaccinationLog from '@/src/models/VaccinationLog';
+import Cattle from '@/src/models/Cattle';
+import Farm from '@/src/models/Farm';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
 
@@ -17,10 +19,51 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'HEALTH'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'HEALTH'], async (user) => {
     try {
       const body = await req.json();
       await dbConnect();
+
+      // ── Resolve farmId Dynamically ──────────────────────────────────────
+      let resolvedFarmId: string | null = null;
+      const rawFarmId = body.farmId ? String(body.farmId).trim() : '';
+
+      if (rawFarmId && /^[0-9a-fA-F]{24}$/.test(rawFarmId)) {
+        resolvedFarmId = rawFarmId;
+      } else if (rawFarmId && rawFarmId !== 'UNKNOWN_FARM') {
+        const farm = await Farm.findOne({ code: rawFarmId });
+        if (farm) {
+          resolvedFarmId = farm._id.toString();
+        }
+      }
+
+      // ── Try to get farmId from the referenced animal
+      if (!resolvedFarmId && body.tagId) {
+        const animal = await Cattle.findOne({ tag: String(body.tagId).trim() });
+        if (animal && animal.farmId) {
+          resolvedFarmId = animal.farmId.toString();
+        }
+      }
+
+      // Fallback 1: Authenticated user's farmId from session token
+      if (!resolvedFarmId && user.farmId) {
+        resolvedFarmId = user.farmId.toString();
+      }
+
+      // Fallback 2: System default (first active farm found)
+      if (!resolvedFarmId) {
+        const defaultFarm = await Farm.findOne({ isDeleted: false });
+        if (defaultFarm) {
+          resolvedFarmId = defaultFarm._id.toString();
+        }
+      }
+
+      if (resolvedFarmId) {
+        body.farmId = resolvedFarmId;
+      } else {
+        delete body.farmId;
+      }
+
       const record = await VaccinationLog.create(body);
       return createdResponse(record, 'VaccinationLog created successfully');
     } catch (error: any) {
