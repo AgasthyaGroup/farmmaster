@@ -30,7 +30,7 @@ async function ensureDefaultDepartments() {
 }
 
 export async function GET(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'DEPARTMENTS'], async () => {
     try {
       await dbConnect();
       await ensureDefaultDepartments();
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'DEPARTMENTS'], async () => {
     try {
       const body = await req.json();
       const name = body?.name?.trim();

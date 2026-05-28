@@ -19,6 +19,13 @@ const DEFAULT_ROLES = [
     isSystem: true,
     status: true,
   },
+  {
+    name: 'INCHARGE',
+    description: 'Access to operations and data entry for a specific farm',
+    permissions: ['DASHBOARD', 'CATTLE', 'SHED_LOG', 'CROSSING_LOG', 'HEALTH', 'MILK_PRODUCTION'],
+    isSystem: true,
+    status: true,
+  },
 ];
 
 async function ensureDefaultRoles() {
@@ -42,7 +49,7 @@ async function ensureDefaultRoles() {
 }
 
 export async function GET(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'ROLES'], async () => {
     try {
       await dbConnect();
       await ensureDefaultRoles();
@@ -55,7 +62,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'ROLES'], async () => {
     try {
       const body = await req.json();
       const name = body?.name?.trim()?.toUpperCase();

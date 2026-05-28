@@ -8,7 +8,7 @@ import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse } from '@/src/utils/responses';
 
 export async function GET(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN'], async (user) => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'DASHBOARD'], async (user) => {
     try {
       await dbConnect();
       

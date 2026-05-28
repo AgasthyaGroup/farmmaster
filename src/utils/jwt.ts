@@ -14,8 +14,9 @@ if (!JWT_REFRESH_SECRET) {
 export interface TokenPayload {
   userId: string;
   email: string;
-  role: 'SUPER_ADMIN' | 'FARM_ADMIN' | 'INCHARGE';
+  role: string;
   farmId?: string | null;
+  permissions?: string[]; // Included dynamically from the DB or embedded in JWT
 }
 
 export const generateAccessToken = (payload: TokenPayload) => {

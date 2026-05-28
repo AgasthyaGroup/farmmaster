@@ -6,7 +6,7 @@ import { withAuth } from '@/src/utils/authGuard';
 import { errorResponse, notFoundResponse, successResponse } from '@/src/utils/responses';
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  return withAuth(req, ['SUPER_ADMIN'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'ROLES'], async () => {
     try {
       const { id } = await params;
       if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -47,7 +47,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  return withAuth(req, ['SUPER_ADMIN'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'ROLES'], async () => {
     try {
       const { id } = await params;
       if (!mongoose.Types.ObjectId.isValid(id)) {

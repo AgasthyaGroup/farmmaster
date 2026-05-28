@@ -7,7 +7,7 @@ import { successResponse, errorResponse, createdResponse } from '@/src/utils/res
 import { createCattleSchema } from '@/src/utils/validation';
 
 export async function GET(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'CATTLE'], async () => {
     try {
       await dbConnect();
       const cattle = await Cattle.find({ isDeleted: false })
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'CATTLE'], async () => {
     try {
       let body = await req.json();
       const parsedBody = createCattleSchema.safeParse(body);

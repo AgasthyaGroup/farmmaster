@@ -15,7 +15,7 @@ const sanitizeUser = (user: any) => {
 };
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  return withAuth(req, ['SUPER_ADMIN'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'USERS'], async () => {
     try {
       const { id } = await params;
       const parsedId = objectIdSchema.safeParse(id);
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  return withAuth(req, ['SUPER_ADMIN'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'USERS'], async () => {
     try {
       const { id } = await params;
       const parsedId = objectIdSchema.safeParse(id);
@@ -66,17 +66,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       }
 
       if (parsedBody.data.department) {
-        const existingDepartment = await Department.findOne({ name: parsedBody.data.department });
+        const { department } = parsedBody.data;
+        const existingDepartment = await Department.findOne({ name: new RegExp(`^${department}$`, 'i') });
         if (!existingDepartment) {
-          return errorResponse('Invalid department', 400);
+          return errorResponse(`Invalid department: ${department}`, 400);
         }
+        parsedBody.data.department = existingDepartment.name;
       }
 
       if (parsedBody.data.role) {
-        const existingRole = await Role.findOne({ name: parsedBody.data.role });
+        const { role } = parsedBody.data;
+        const existingRole = await Role.findOne({ name: String(role).toUpperCase() });
         if (!existingRole) {
-          return errorResponse('Invalid role', 400);
+          return errorResponse(`Invalid role: ${role}`, 400);
         }
+        parsedBody.data.role = existingRole.name;
       }
 
       const user = await User.findByIdAndUpdate(
@@ -94,7 +98,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  return withAuth(req, ['SUPER_ADMIN'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'USERS'], async () => {
     try {
       const { id } = await params;
       const parsedId = objectIdSchema.safeParse(id);

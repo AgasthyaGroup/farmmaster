@@ -16,7 +16,7 @@ const sanitizeUser = (user: any) => {
 };
 
 export async function GET(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'USERS'], async () => {
     try {
       await dbConnect();
       const users = await User.find().populate('farmId').sort({ createdAt: -1 });
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'USERS'], async () => {
     try {
       const parsedBody = createUserSchema.safeParse(await req.json());
       if (!parsedBody.success) {
@@ -40,14 +40,14 @@ export async function POST(req: NextRequest) {
       
       const existingUser = await User.findOne({ $or: [{ email }, { userId }] });
       
-      const existingDepartment = await Department.findOne({ name: department });
+      const existingDepartment = await Department.findOne({ name: new RegExp(`^${department}$`, 'i') });
       if (!existingDepartment) {
-        return errorResponse('Invalid department', 400);
+        return errorResponse(`Invalid department: ${department}`, 400);
       }
 
-      const existingRole = await Role.findOne({ name: role });
+      const existingRole = await Role.findOne({ name: String(role).toUpperCase() });
       if (!existingRole) {
-        return errorResponse('Invalid role', 400);
+        return errorResponse(`Invalid role: ${role}`, 400);
       }
       
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -63,10 +63,10 @@ export async function POST(req: NextRequest) {
             userId,
             name,
             email,
-            department,
+            department: existingDepartment.name,
             phone,
             password: hashedPassword,
-            role,
+            role: existingRole.name,
             farmId: role === 'SUPER_ADMIN' ? null : farmId,
             status: true
           },
@@ -79,11 +79,11 @@ export async function POST(req: NextRequest) {
         userId,
         name,
         email,
-        department,
+        department: existingDepartment.name,
         phone,
         password: hashedPassword,
-        role,
-        farmId: role === 'SUPER_ADMIN' ? null : farmId,
+        role: existingRole.name,
+        farmId: existingRole.name === 'SUPER_ADMIN' ? null : farmId,
         status: true
       });
 

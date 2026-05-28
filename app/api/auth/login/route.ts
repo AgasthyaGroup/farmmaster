@@ -1,7 +1,9 @@
 import { NextRequest } from 'next/server';
+import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/src/database/dbConnection';
 import User from '@/src/models/User';
+import Role from '@/src/models/Role';
 import { generateAccessToken, generateRefreshToken } from '@/src/utils/jwt';
 import { successResponse, errorResponse } from '@/src/utils/responses';
 import { loginSchema } from '@/src/utils/validation';
@@ -39,11 +41,20 @@ export async function POST(req: NextRequest) {
       return errorResponse('Invalid credentials', 401);
     }
 
+    const roleDoc = await Role.findOne({ name: String(user.role).toUpperCase() });
+    let permissions = roleDoc?.permissions || [];
+
+    // Failsafe: If roles aren't seeded yet, SUPER_ADMIN must still have ALL access
+    if (permissions.length === 0 && user.role === 'SUPER_ADMIN') {
+      permissions = ['ALL'];
+    }
+
     const payload = {
       userId: user._id.toString(),
       email: user.email,
       role: user.role,
       farmId: user.farmId ? user.farmId.toString() : null,
+      permissions,
     };
 
     const accessToken = generateAccessToken(payload);
@@ -57,6 +68,7 @@ export async function POST(req: NextRequest) {
         email: user.email,
         role: user.role,
         farmId: user.farmId,
+        permissions,
       },
       tokens: {
         accessToken,
