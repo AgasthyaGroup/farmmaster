@@ -194,7 +194,7 @@ const TreatmentLogSchema = new Schema<ITreatmentLog>(
 
 TreatmentLogSchema.index({ farmId: 1, tag_id: 1 });
 
-TreatmentLogSchema.pre('validate', function (this: any, next: any) {
+TreatmentLogSchema.pre('validate', function (this: any) {
   if (this.startDate && this.endDate) {
     const start = new Date(this.startDate);
     const end = new Date(this.endDate);
@@ -202,7 +202,6 @@ TreatmentLogSchema.pre('validate', function (this: any, next: any) {
       this.invalidate('endDate', 'Treatment validation failed: endDate cannot be chronologically before startDate.');
     }
   }
-  next();
 });
 
 // ─── Export Compiled Models ─────────────────────────────────────────────────────

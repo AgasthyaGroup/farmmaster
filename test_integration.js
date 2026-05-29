@@ -1,5 +1,5 @@
-const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OWZjNjIzMWY2NTkwMTUwMTgxYzg5MjYiLCJlbWFpbCI6ImFkbWluQGFubS5jb20iLCJyb2xlIjoiRkFSTV9BRE1JTiIsImZhcm1JZCI6IjY5ZmIxNGRjZGVjMjIzY2Y5NWM5ZGQxNSIsImlhdCI6MTc3OTQ0ODk2OSwiZXhwIjoxNzc5NTM1MzY5fQ.laDhtuMDNMZxAl_L3KPvTXJkUz2Xjzmk-3HmlbAElWM";
-const BASE_URL = "https://farm.agasthyanutromilk.com";
+const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTExOGY0ZTJiMDUwZGFlMGFmNjRmODYiLCJyb2xlIjoiU1VQRVJfQURNSU4iLCJlbWFpbCI6ImFkbWluQGFkbWluLmNvbSIsImlhdCI6MTc4MDA1NDE0MCwiZXhwIjoxNzgwMTQwNTQwfQ.6y5NrQogd0gqMBMAnwnuJ-SQ0MYxLWlR87FxmgyMeJ0";
+const BASE_URL = "http://localhost:3001";
 
 async function testEndpoint(name, endpoint, payload) {
   try {
@@ -33,12 +33,16 @@ async function testEndpoint(name, endpoint, payload) {
 }
 
 async function runAllTests() {
+  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+  const testTag = `TAG-TEST-${randomSuffix}`;
+  console.log(`Generated unique test tag: ${testTag}`);
+
   const tests = [
     {
       name: "Cattle / Livestock",
       endpoint: "/api/cattle",
       payload: {
-        tag: "TAG-TEST-001",
+        tag: testTag,
         cattleType: "Cow",
         shed: "1",
         calvings: 2,
@@ -72,7 +76,7 @@ async function runAllTests() {
       name: "Treatment Log",
       endpoint: "/api/health/treatments",
       payload: {
-        tagId: "TAG-TEST-001",
+        tagId: testTag,
         animalId: "Cow",
         shedId: "1",
         symptoms: "Fever",
@@ -86,7 +90,7 @@ async function runAllTests() {
       name: "Vaccination Log",
       endpoint: "/api/health/vaccinations",
       payload: {
-        tagId: "TAG-TEST-001",
+        tagId: testTag,
         animalId: "Cow",
         shedId: "1",
         vaccinationName: "FMD",
@@ -101,7 +105,7 @@ async function runAllTests() {
       name: "Crossing Log",
       endpoint: "/api/crossing",
       payload: {
-        tag: "TAG-TEST-001",
+        tag: testTag,
         maleTag: "BULL-001",
         crossingDate: new Date().toISOString(),
         crossingAttemptNumber: 1,
@@ -129,3 +133,4 @@ async function runAllTests() {
 }
 
 runAllTests();
+
