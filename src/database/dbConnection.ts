@@ -1,5 +1,23 @@
 import mongoose from 'mongoose';
 
+// ─── Pre-register all models to resolve Mongoose lazy-loading race conditions ───
+import '../models/Farm';
+import '../models/Shed';
+import '../models/Cattle';
+import '../models/LiveStock';
+import '../models/Tag';
+import '../models/User';
+import '../models/Role';
+import '../models/Logs'; // registers CrossingLog, SaleLog, and TreatmentLog
+import '../models/VaccinationLog';
+import '../models/FeedInventory';
+import '../models/MedicineInventory';
+import '../models/GrassCollection';
+import '../models/DailyFeeding';
+import '../models/MilkCollection';
+import '../models/MilkQuality';
+import '../models/Department';
+
 /**
  * Global is used here to maintain a cached connection across hot reloads
  * in development. This prevents connections from growing exponentially
