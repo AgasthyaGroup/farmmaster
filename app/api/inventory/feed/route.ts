@@ -21,6 +21,22 @@ export async function POST(req: NextRequest) {
     try {
       const body = await req.json();
       await dbConnect();
+
+      // Sanitize numeric fields dynamically to prevent DB crash
+      const numericFields = ['oldStock', 'bought', 'usage', 'remainingStock'];
+      for (const field of numericFields) {
+        const val = Number(body[field]);
+        body[field] = isNaN(val) ? 0 : val;
+      }
+
+      // Sanitize date fields dynamically to prevent DB crash
+      if (body.purchaseDate) {
+        const parsed = new Date(body.purchaseDate);
+        body.purchaseDate = isNaN(parsed.getTime()) ? null : parsed;
+      } else {
+        body.purchaseDate = null;
+      }
+
       const record = await FeedInventory.create(body);
       return createdResponse(record, 'FeedInventory created successfully');
     } catch (error: any) {

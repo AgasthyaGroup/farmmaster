@@ -21,6 +21,25 @@ export async function POST(req: NextRequest) {
     try {
       const body = await req.json();
       await dbConnect();
+
+      // Sanitize numeric fields dynamically to prevent DB crash
+      const numericFields = ['oldStock', 'bought', 'used', 'presentStock'];
+      for (const field of numericFields) {
+        const val = Number(body[field]);
+        body[field] = isNaN(val) ? 0 : val;
+      }
+
+      // Sanitize date fields dynamically to prevent DB crash
+      const dateFields = ['purchaseDate', 'expiryDate'];
+      for (const field of dateFields) {
+        if (body[field]) {
+          const parsed = new Date(body[field]);
+          body[field] = isNaN(parsed.getTime()) ? null : parsed;
+        } else {
+          body[field] = null;
+        }
+      }
+
       const record = await MedicineInventory.create(body);
       return createdResponse(record, 'MedicineInventory created successfully');
     } catch (error: any) {
