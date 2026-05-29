@@ -16,7 +16,7 @@ import dbConnect from '@/src/database/dbConnection';
 import TreatmentLog from '@/src/models/TreatmentLog';
 import Cattle from '@/src/models/Cattle';
 import Farm from '@/src/models/Farm';
-import { safeDateParse } from '@/src/models/Logs';
+import { safeDateParse, resolveTagString } from '@/src/models/Logs';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
 
@@ -55,6 +55,11 @@ export async function POST(req: NextRequest) {
         return errorResponse('tag_id (animal tag) is required for treatment logs', 400);
       }
 
+      await dbConnect();
+
+      // Resolve dynamic ObjectId to human-readable tag string if submitted by frontend selector
+      body.tag_id = await resolveTagString(body.tag_id);
+
       // Keep legacy fields populated for backward compatibility
       if (!body.tagId) body.tagId = body.tag_id;
 
@@ -73,8 +78,6 @@ export async function POST(req: NextRequest) {
           );
         }
       }
-
-      await dbConnect();
 
       // ── Resolve farmId Dynamically ──────────────────────────────────────
       let resolvedFarmId: string | null = null;

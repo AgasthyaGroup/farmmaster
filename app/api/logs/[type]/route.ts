@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import dbConnect from '@/src/database/dbConnection';
-import { CrossingLog, SaleLog, TreatmentLog } from '@/src/models/Logs';
+import { CrossingLog, SaleLog, TreatmentLog, resolveTagString } from '@/src/models/Logs';
 import LiveStock from '@/src/models/LiveStock';
 import Farm from '@/src/models/Farm';
 import { withAuth } from '@/src/utils/authGuard';
@@ -47,11 +47,14 @@ export async function POST(
           return errorResponse('tag_id is required for child operational logs', 400);
         }
 
+        await dbConnect();
+
+        // Resolve dynamic ObjectId to human-readable tag string if submitted by frontend selector
+        body.tag_id = (await resolveTagString(body.tag_id)).toUpperCase();
+
         // Keep legacy fields populated for backwards compatibility
         body.tagId = body.tag_id;
         body.tag = body.tag_id;
-
-        await dbConnect();
 
         // 4. Resolve farmId Dynamically
         let resolvedFarmId: string | null = null;

@@ -14,6 +14,7 @@ import dbConnect from '@/src/database/dbConnection';
 import CrossingLog from '@/src/models/CrossingLog';
 import Cattle from '@/src/models/Cattle';
 import Farm from '@/src/models/Farm';
+import { resolveTagString } from '@/src/models/Logs';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
 import { z } from 'zod';
@@ -79,6 +80,10 @@ export async function POST(req: NextRequest) {
       }
 
       await dbConnect();
+
+      // Resolve dynamic ObjectId to human-readable tag string if submitted by frontend selector
+      body.tag_id = await resolveTagString(body.tag_id);
+      body.tag = body.tag_id;
 
       // ── Resolve farmId Dynamically ──────────────────────────────────────
       let resolvedFarmId: string | null = null;

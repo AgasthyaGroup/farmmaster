@@ -3,6 +3,7 @@ import dbConnect from '@/src/database/dbConnection';
 import VaccinationLog from '@/src/models/VaccinationLog';
 import Cattle from '@/src/models/Cattle';
 import Farm from '@/src/models/Farm';
+import { resolveTagString } from '@/src/models/Logs';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
 
@@ -23,6 +24,11 @@ export async function POST(req: NextRequest) {
     try {
       const body = await req.json();
       await dbConnect();
+
+      // Resolve dynamic ObjectId to human-readable tag string if submitted by frontend selector
+      if (body.tagId) {
+        body.tagId = await resolveTagString(body.tagId);
+      }
 
       // ── Resolve farmId Dynamically ──────────────────────────────────────
       let resolvedFarmId: string | null = null;

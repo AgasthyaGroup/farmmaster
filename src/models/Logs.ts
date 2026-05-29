@@ -26,10 +26,39 @@ export function safeDateParse(value: unknown): Date | null {
 
 // ─── Asynchronous tag_id Foreign-Key Validator ──────────────────────────────────
 
+export async function resolveTagString(value: string): Promise<string> {
+  if (!value) return value;
+  const cleanValue = String(value).trim();
+  if (/^[0-9a-fA-F]{24}$/.test(cleanValue)) {
+    try {
+      const LiveStock = mongoose.models.LiveStock || mongoose.model('LiveStock');
+      const Cattle = mongoose.models.Cattle || mongoose.model('Cattle');
+
+      // 1. Check LiveStock
+      const liveAnimal = await LiveStock.findById(cleanValue).lean();
+      if (liveAnimal && liveAnimal.tag_id) {
+        return String(liveAnimal.tag_id).trim();
+      }
+
+      // 2. Check Cattle
+      const cattleAnimal = await Cattle.findById(cleanValue).lean();
+      if (cattleAnimal && cattleAnimal.tag) {
+        return String(cattleAnimal.tag).trim();
+      }
+    } catch (err) {
+      console.error('[resolveTagString] error:', err);
+    }
+  }
+  return cleanValue;
+}
+
 async function validateLiveStockTag(this: any, value: string): Promise<boolean> {
   if (!value) return false;
   try {
-    const cleanTag = String(value).trim().toUpperCase();
+    let cleanTag = String(value).trim().toUpperCase();
+    if (/^[0-9a-fA-F]{24}$/.test(cleanTag)) {
+      cleanTag = (await resolveTagString(cleanTag)).toUpperCase();
+    }
     const LiveStock = mongoose.model('LiveStock');
     const animal = await LiveStock.findOne({ tag_id: cleanTag, status: 'ACTIVE', isDeleted: false });
     return !!animal;
