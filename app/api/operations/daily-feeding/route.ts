@@ -21,6 +21,19 @@ export async function POST(req: NextRequest) {
     try {
       const body = await req.json();
       await dbConnect();
+
+      // Safe date fallback to prevent DB validation crash
+      if (body.date) {
+        const parsedDate = new Date(body.date);
+        if (isNaN(parsedDate.getTime())) {
+          body.date = new Date();
+        } else {
+          body.date = parsedDate;
+        }
+      } else {
+        body.date = new Date();
+      }
+
       const record = await DailyFeeding.create(body);
       return createdResponse(record, 'DailyFeeding created successfully');
     } catch (error: any) {

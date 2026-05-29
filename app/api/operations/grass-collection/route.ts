@@ -56,6 +56,18 @@ export async function POST(req: NextRequest) {
         delete body.farmId;
       }
 
+      // Safe date fallback to prevent DB validation crash
+      if (body.date) {
+        const parsedDate = new Date(body.date);
+        if (isNaN(parsedDate.getTime())) {
+          body.date = new Date();
+        } else {
+          body.date = parsedDate;
+        }
+      } else {
+        body.date = new Date();
+      }
+
       const record = await GrassCollection.create(body);
       return createdResponse(record, 'GrassCollection created successfully');
     } catch (error: any) {
