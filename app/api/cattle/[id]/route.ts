@@ -4,7 +4,7 @@ import LiveStock from '@/src/models/LiveStock';
 import Cattle from '@/src/models/Cattle';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse } from '@/src/utils/responses';
-import { deepSanitizeCattleInput } from '../route';
+import { deepSanitizeCattleInput, mapLiveStockToCattle } from '../route';
 
 export async function PUT(
   req: NextRequest,
@@ -48,7 +48,7 @@ export async function PUT(
         console.error('Non-blocking legacy sync error during update:', legacyErr);
       }
 
-      return successResponse(updatedLiveStock, 'Cattle record updated successfully in unified registry');
+      return successResponse(mapLiveStockToCattle(updatedLiveStock), 'Cattle record updated successfully in unified registry');
     } catch (error: any) {
       console.error('[PUT /api/cattle/[id]] Controller crash prevented:', error);
       return errorResponse(error.message || 'Failed to update cattle due to database mismatch.', 500);

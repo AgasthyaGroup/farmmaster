@@ -108,12 +108,58 @@ export function deepSanitizeCattleInput(body: any, userFarmId?: string | null) {
 
 // ─── GET API Route ─────────────────────────────────────────────────────────────
 
+export function mapLiveStockToCattle(r: any) {
+  if (!r) return r;
+  const doc = r.toObject ? r.toObject() : JSON.parse(JSON.stringify(r));
+
+  // Ensure tag is present for frontend compatibility
+  if (!doc.tag) doc.tag = doc.tag_id || '';
+  if (!doc.tag_id) doc.tag_id = doc.tag;
+
+  // Ensure cattleType is present for frontend compatibility
+  if (!doc.cattleType) {
+    doc.cattleType = doc.animalType
+      ? String(doc.animalType).charAt(0).toUpperCase() + String(doc.animalType).slice(1).toLowerCase()
+      : 'Cow';
+  }
+  if (!doc.animalType) doc.animalType = doc.cattleType;
+
+  // Ensure shed is present for frontend compatibility
+  if (!doc.shed) doc.shed = doc.shedId || '-';
+  if (!doc.shedId) doc.shedId = doc.shed;
+
+  // Ensure dob is present for frontend dynamic age calculation
+  if (!doc.dob && doc.dateOfBirth) {
+    doc.dob = doc.dateOfBirth;
+  }
+  if (!doc.dateOfBirth && doc.dob) {
+    doc.dateOfBirth = doc.dob;
+  }
+
+  // Ensure entryDate is present (the first table column in the UI)
+  if (!doc.entryDate) {
+    const d = doc.date || doc.createdAt;
+    if (d) {
+      const dateObj = new Date(d);
+      if (!isNaN(dateObj.getTime())) {
+        doc.entryDate = `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
+      }
+    }
+    if (!doc.entryDate) {
+      doc.entryDate = '-';
+    }
+  }
+
+  return doc;
+}
+
 export async function GET(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'CATTLE'], async () => {
     try {
       await dbConnect();
       const records = await LiveStock.find({ isDeleted: false }).sort({ createdAt: -1 });
-      return successResponse(records, 'LiveStock fetched successfully');
+      const mappedRecords = records.map(r => mapLiveStockToCattle(r));
+      return successResponse(mappedRecords, 'LiveStock fetched successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);
     }
