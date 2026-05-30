@@ -1,4 +1,6 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
+import './LiveStock';
+import './Cattle';
 
 // ─── Shared Utility ───────────────────────────────────────────────────────────
 
