@@ -39,7 +39,7 @@ export const createShedSchema = z.object({
 });
 
 export const createCattleSchema = z.object({
-  farmId: z.string().optional().nullable(),
+  farmId: z.any().optional().nullable(),
   name: z.string().optional(),
   code: z.string().optional(),
   tag: z.string().min(1, 'Tag is required'),
