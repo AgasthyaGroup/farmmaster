@@ -19,6 +19,7 @@ import Farm from '@/src/models/Farm';
 import { safeDateParse, resolveTagString } from '@/src/models/Logs';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
+import mongoose from 'mongoose';
 
 export async function GET(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'HEALTH'], async () => {
@@ -62,6 +63,17 @@ export async function POST(req: NextRequest) {
 
       // Keep legacy fields populated for backward compatibility
       if (!body.tagId) body.tagId = body.tag_id;
+
+      // ── Validation Interceptor Check ──────────────────────────────────────
+      const cleanTag = String(body.tag_id).trim().toUpperCase();
+      const LiveStock = mongoose.models.LiveStock || mongoose.model('LiveStock');
+      const animalExists = await LiveStock.findOne({ tag_id: cleanTag, isDeleted: false });
+      if (!animalExists) {
+        return errorResponse(
+          'Data Validation Error: Cannot log transaction. The targeted Tag ID does not exist in the Live Stock registry.',
+          400
+        );
+      }
 
       // ── Structural date validation: startDate must be <= endDate ─────────
       // This check runs safely in the route layer using safeDateParse which

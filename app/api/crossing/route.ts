@@ -18,6 +18,7 @@ import { resolveTagString } from '@/src/models/Logs';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
 import { z } from 'zod';
+import mongoose from 'mongoose';
 
 // Validate that the request structure is valid.
 // farmId is optional here because we can resolve it dynamically from the referenced animal or user context.
@@ -84,6 +85,17 @@ export async function POST(req: NextRequest) {
       // Resolve dynamic ObjectId to human-readable tag string if submitted by frontend selector
       body.tag_id = await resolveTagString(body.tag_id);
       body.tag = body.tag_id;
+
+      // ── Validation Interceptor Check ──────────────────────────────────────
+      const cleanTag = String(body.tag_id).trim().toUpperCase();
+      const LiveStock = mongoose.models.LiveStock || mongoose.model('LiveStock');
+      const animalExists = await LiveStock.findOne({ tag_id: cleanTag, isDeleted: false });
+      if (!animalExists) {
+        return errorResponse(
+          'Data Validation Error: Cannot log transaction. The targeted Tag ID does not exist in the Live Stock registry.',
+          400
+        );
+      }
 
       // ── Resolve farmId Dynamically ──────────────────────────────────────
       let resolvedFarmId: string | null = null;

@@ -6,6 +6,7 @@ import Farm from '@/src/models/Farm';
 import { resolveTagString } from '@/src/models/Logs';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
+import mongoose from 'mongoose';
 
 export async function GET(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'HEALTH'], async () => {
@@ -28,6 +29,20 @@ export async function POST(req: NextRequest) {
       // Resolve dynamic ObjectId to human-readable tag string if submitted by frontend selector
       if (body.tagId) {
         body.tagId = await resolveTagString(body.tagId);
+      }
+
+      // ── Validation Interceptor Check ──────────────────────────────────────
+      const targetTag = String(body.tagId || body.tag_id || '').trim().toUpperCase();
+      if (!targetTag) {
+        return errorResponse('tagId (animal tag) is required for vaccination logs', 400);
+      }
+      const LiveStock = mongoose.models.LiveStock || mongoose.model('LiveStock');
+      const animalExists = await LiveStock.findOne({ tag_id: targetTag, isDeleted: false });
+      if (!animalExists) {
+        return errorResponse(
+          'Data Validation Error: Cannot log transaction. The targeted Tag ID does not exist in the Live Stock registry.',
+          400
+        );
       }
 
       // ── Resolve farmId Dynamically ──────────────────────────────────────

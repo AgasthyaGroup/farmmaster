@@ -5,6 +5,7 @@ import LiveStock from '@/src/models/LiveStock';
 import Farm from '@/src/models/Farm';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
+import mongoose from 'mongoose';
 
 export async function POST(
   req: NextRequest,
@@ -55,6 +56,17 @@ export async function POST(
         // Keep legacy fields populated for backwards compatibility
         body.tagId = body.tag_id;
         body.tag = body.tag_id;
+
+        // ── Validation Interceptor Check ──────────────────────────────────────
+        const cleanTag = String(body.tag_id).trim().toUpperCase();
+        const LiveStock = mongoose.models.LiveStock || mongoose.model('LiveStock');
+        const animalExists = await LiveStock.findOne({ tag_id: cleanTag, isDeleted: false });
+        if (!animalExists) {
+          return errorResponse(
+            'Data Validation Error: Cannot log transaction. The targeted Tag ID does not exist in the Live Stock registry.',
+            400
+          );
+        }
 
         // 4. Resolve farmId Dynamically
         let resolvedFarmId: string | null = null;

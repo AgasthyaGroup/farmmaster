@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import dbConnect from '@/src/database/dbConnection';
 import Farm from '@/src/models/Farm';
+import Shed from '@/src/models/Shed';
+import LiveStock from '@/src/models/LiveStock';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
 import { createFarmSchema } from '@/src/utils/validation';
@@ -9,7 +11,40 @@ export async function GET(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'FARMS'], async () => {
     try {
       await dbConnect();
-      const farms = await Farm.find({ isDeleted: false }).sort({ createdAt: -1 });
+      const { searchParams } = new URL(req.url);
+      const embedCapacity = searchParams.get('capacity') === 'true';
+
+      const farms = await Farm.find({ isDeleted: false }).sort({ createdAt: -1 }).lean();
+
+      if (embedCapacity) {
+        const enhancedFarms = await Promise.all(
+          farms.map(async (farm) => {
+            const sheds = await Shed.find({ farmId: farm._id, isDeleted: false }).lean();
+            const maxCapacity = sheds.reduce((sum, s) => sum + (Number(s.capacity) || 0), 0);
+
+            const occupied = await LiveStock.countDocuments({
+              farmId: farm._id,
+              status: 'ACTIVE',
+              isDeleted: false,
+            });
+
+            const vacant = Math.max(0, maxCapacity - occupied);
+            const usagePercent = maxCapacity > 0 ? Math.round((occupied / maxCapacity) * 1000) / 10 : 0;
+
+            return {
+              ...farm,
+              capacity: {
+                maxCapacity,
+                occupied,
+                vacant,
+                usagePercent,
+              },
+            };
+          })
+        );
+        return successResponse(enhancedFarms, 'Farms fetched successfully with capacity');
+      }
+
       return successResponse(farms, 'Farms fetched successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);

@@ -3,6 +3,8 @@ import dbConnect from '@/src/database/dbConnection';
 import MilkCollection from '@/src/models/MilkCollection';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
+import { resolveTagString } from '@/src/models/Logs';
+import mongoose from 'mongoose';
 
 export async function GET(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'MILK_PRODUCTION'], async () => {
@@ -21,6 +23,33 @@ export async function POST(req: NextRequest) {
     try {
       const body = await req.json();
       await dbConnect();
+
+      // Normalize fields to tag_id / tagId
+      if (!body.tag_id) {
+        body.tag_id = String(body.tagId || body.tag || '').trim();
+      }
+      if (!body.tagId) {
+        body.tagId = body.tag_id;
+      }
+
+      if (!body.tag_id) {
+        return errorResponse('tagId (animal tag) is required for milk collection logs', 400);
+      }
+
+      // Resolve dynamic ObjectId to human-readable tag string if submitted by frontend selector
+      body.tag_id = await resolveTagString(body.tag_id);
+      body.tagId = body.tag_id;
+
+      // ── Validation Interceptor Check ──────────────────────────────────────
+      const cleanTag = String(body.tag_id).trim().toUpperCase();
+      const LiveStock = mongoose.models.LiveStock || mongoose.model('LiveStock');
+      const animalExists = await LiveStock.findOne({ tag_id: cleanTag, isDeleted: false });
+      if (!animalExists) {
+        return errorResponse(
+          'Data Validation Error: Cannot log transaction. The targeted Tag ID does not exist in the Live Stock registry.',
+          400
+        );
+      }
 
       // Safe date fallback to prevent DB validation crash
       if (body.date) {
