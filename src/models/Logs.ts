@@ -76,6 +76,8 @@ export interface ICrossingLog extends Document {
   tag_id: string;
   tag?: string;
   maleTag?: string;
+  crossingType?: string;
+  batchNumber?: string;
   crossingDate?: Date;
   crossingAttemptNumber?: number;
   pdDate?: Date;
@@ -108,6 +110,8 @@ const CrossingLogSchema = new Schema<ICrossingLog>(
     },
     tag: { type: String, trim: true, default: '' },
     maleTag: { type: String, trim: true, default: null },
+    crossingType: { type: String, trim: true, default: 'Natural' },
+    batchNumber: { type: String, trim: true, default: null },
     crossingDate: { type: Date, default: null, set: safeDateParse },
     crossingAttemptNumber: { type: Number, default: null, min: 0 },
     pdDate: { type: Date, default: null, set: safeDateParse },
