@@ -308,10 +308,6 @@ const PurchaseLogSchema = new Schema<IPurchaseLog>(
       trim: true,
       uppercase: true,
       index: true,
-      validate: {
-        validator: validateLiveStockTag,
-        message: 'Data Validation Error: Cannot log transaction. The targeted Tag ID does not exist in the Live Stock registry.',
-      },
     },
     sellerName: { type: String, trim: true, default: '' },
     sellerContact: { type: String, trim: true, default: '' },

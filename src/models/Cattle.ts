@@ -31,6 +31,8 @@ export interface ICattle extends Document {
   purchaseBy?: string;
   purchaseRemarks?: string;
   remarks?: string;
+  isPendingDetails?: boolean;
+  onboardingType?: string;
 }
 
 const CattleSchema = new Schema<ICattle>(
@@ -67,6 +69,8 @@ const CattleSchema = new Schema<ICattle>(
     purchaseBy: { type: String, trim: true, default: '' },
     purchaseRemarks: { type: String, trim: true, default: '' },
     remarks: { type: String, trim: true, default: '' },
+    isPendingDetails: { type: Boolean, default: false, index: true },
+    onboardingType: { type: String, default: 'PURCHASE', index: true },
   },
   { timestamps: true }
 );

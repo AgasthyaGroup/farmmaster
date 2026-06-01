@@ -29,6 +29,8 @@ export interface ILiveStock extends Document {
   purchaseBy?: string;
   purchaseRemarks?: string;
   remarks?: string;
+  isPendingDetails?: boolean;
+  onboardingType?: string;
   isDeleted: boolean;
 }
 
@@ -87,6 +89,8 @@ const LiveStockSchema = new Schema<ILiveStock>(
     purchaseBy: { type: String, trim: true, default: '' },
     purchaseRemarks: { type: String, trim: true, default: '' },
     remarks: { type: String, trim: true, default: '' },
+    isPendingDetails: { type: Boolean, default: false, index: true },
+    onboardingType: { type: String, default: 'PURCHASE', index: true },
     isDeleted: { type: Boolean, default: false, index: true },
   },
   { timestamps: true }

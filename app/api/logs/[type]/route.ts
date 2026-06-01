@@ -64,12 +64,25 @@ export async function POST(
         // ── Validation Interceptor Check ──────────────────────────────────────
         const cleanTag = String(body.tag_id).trim().toUpperCase();
         const LiveStock = mongoose.models.LiveStock || mongoose.model('LiveStock');
-        const animalExists = await LiveStock.findOne({ tag_id: cleanTag, isDeleted: false });
-        if (!animalExists) {
-          return errorResponse(
-            'Data Validation Error: Cannot log transaction. The targeted Tag ID does not exist in the Live Stock registry.',
-            400
-          );
+        
+        if (normalizedType === 'purchase') {
+          // Verify that this Tag ID is not already registered in active inventory to prevent duplicates
+          const duplicateAnimal = await LiveStock.findOne({ tag_id: cleanTag, isDeleted: false });
+          if (duplicateAnimal) {
+            return errorResponse(
+              `Data Validation Error: Tag ID [${cleanTag}] is already registered in active Live Stock registry.`,
+              400
+            );
+          }
+        } else {
+          // Standard check for existing animals for operational logs
+          const animalExists = await LiveStock.findOne({ tag_id: cleanTag, isDeleted: false });
+          if (!animalExists) {
+            return errorResponse(
+              'Data Validation Error: Cannot log transaction. The targeted Tag ID does not exist in the Live Stock registry.',
+              400
+            );
+          }
         }
 
         // 4. Resolve farmId Dynamically
@@ -115,6 +128,42 @@ export async function POST(
         // 5. Create new operational log record (custom validators will trigger automatically)
         const record = await LogModel.create(body);
 
+        // ── If this is a Purchase Log, create a pending livestock record
+        if (normalizedType === 'purchase') {
+          try {
+            await LiveStock.create({
+              tag_id: cleanTag,
+              animalType: 'PENDING',
+              shedId: body.shed || null,
+              farmId: body.farmId || null,
+              purchaseDate: body.purchaseDate || new Date(),
+              purchasePrice: body.price || 0,
+              purchaseFrom: body.sellerName || '',
+              purchaseRemarks: body.sellerContact ? `Seller Contact: ${body.sellerContact}` : '',
+              status: 'ACTIVE',
+              isPendingDetails: true,
+              onboardingType: 'PURCHASE',
+            });
+
+            const CattleModel = mongoose.models.Cattle || mongoose.model('Cattle');
+            await CattleModel.create({
+              tag: cleanTag,
+              cattleType: 'PENDING',
+              shed: body.shed || '-',
+              farmId: body.farmId || null,
+              purchaseDate: body.purchaseDate || new Date(),
+              purchasePrice: body.price || 0,
+              purchaseFrom: body.sellerName || '',
+              purchaseRemarks: body.sellerContact ? `Seller Contact: ${body.sellerContact}` : '',
+              status: 'ACTIVE',
+              isPendingDetails: true,
+              onboardingType: 'PURCHASE',
+            });
+          } catch (syncErr) {
+            console.error('Non-blocking livestock sync error during purchase creation:', syncErr);
+          }
+        }
+
         // ── If this is a Shed Shifting Log, update the animal's current shed assignment
         if (normalizedType === 'shed' && body.newShed) {
           try {
@@ -124,11 +173,28 @@ export async function POST(
             );
             const CattleModel = mongoose.models.Cattle || mongoose.model('Cattle');
             await CattleModel.findOneAndUpdate(
-              { tagId: cleanTag, isDeleted: false },
+              { tag: cleanTag, isDeleted: false },
               { shed: body.newShed }
             );
           } catch (syncErr) {
             console.error('Non-blocking livestock shed sync error during creation:', syncErr);
+          }
+        }
+
+        // ── If this is a Sale Log, update the animal status to SOLD
+        if (normalizedType === 'sale') {
+          try {
+            await LiveStock.findOneAndUpdate(
+              { tag_id: cleanTag, isDeleted: false },
+              { status: 'SOLD' }
+            );
+            const CattleModel = mongoose.models.Cattle || mongoose.model('Cattle');
+            await CattleModel.findOneAndUpdate(
+              { tag: cleanTag, isDeleted: false },
+              { status: 'SOLD' }
+            );
+          } catch (syncErr) {
+            console.error('Non-blocking livestock sale sync error during creation:', syncErr);
           }
         }
 

@@ -138,6 +138,12 @@ export async function POST(req: NextRequest) {
       }
 
       const record = await CrossingLog.create(body);
+      
+      // ── Sync born calf to livestock if Calf Tag is present
+      if (record.calfTag) {
+        await syncCalfRecord(record);
+      }
+
       return createdResponse(record, 'CrossingLog created successfully');
     } catch (error: any) {
       console.error('[POST /api/crossing] Unhandled error:', error);
@@ -150,4 +156,131 @@ export async function POST(req: NextRequest) {
       return errorResponse(error?.message || 'Failed to create crossing log', 500);
     }
   });
+}
+
+/**
+ * Automatically synchronizes calf registration details from a Calving log event
+ * down to a pending record in the LiveStock and legacy Cattle databases.
+ */
+export async function syncCalfRecord(crossingRecord: any, oldCalfTag?: string) {
+  try {
+    const calfTag = crossingRecord.calfTag ? String(crossingRecord.calfTag).trim().toUpperCase() : '';
+    const oldTagClean = oldCalfTag ? String(oldCalfTag).trim().toUpperCase() : '';
+    
+    const LiveStock = mongoose.models.LiveStock || mongoose.model('LiveStock');
+    const CattleModel = mongoose.models.Cattle || mongoose.model('Cattle');
+    
+    // If the calf tag is removed or empty but was previously set, soft-delete the pending calf
+    if (!calfTag && oldTagClean) {
+      await LiveStock.findOneAndUpdate(
+        { tag_id: oldTagClean, isPendingDetails: true },
+        { isDeleted: true }
+      );
+      await CattleModel.findOneAndUpdate(
+        { tag: oldTagClean, isPendingDetails: true },
+        { isDeleted: true }
+      );
+      return;
+    }
+    
+    if (!calfTag) return;
+    
+    const motherTag = crossingRecord.tag_id ? String(crossingRecord.tag_id).trim().toUpperCase() : '';
+    const sireTag = crossingRecord.maleTag ? String(crossingRecord.maleTag).trim().toUpperCase() : '';
+    const dob = crossingRecord.actualCalvingDate || crossingRecord.estimatedCalvingDate || new Date();
+    const farmId = crossingRecord.farmId || null;
+    
+    // Determine mother's animal type for prefilling
+    let animalType = 'CATTLE';
+    if (motherTag) {
+      const mother = await LiveStock.findOne({ tag_id: motherTag, isDeleted: false });
+      if (mother && mother.animalType) {
+        animalType = mother.animalType;
+      }
+    }
+    
+    // Try to find if a pending record already exists under the current or old calf tag
+    const searchTags = [calfTag];
+    if (oldTagClean) searchTags.push(oldTagClean);
+    
+    const pendingCalf = await LiveStock.findOne({
+      tag_id: { $in: searchTags },
+      isPendingDetails: true,
+      isDeleted: false
+    });
+    
+    if (pendingCalf) {
+      // Update existing pending calf record
+      pendingCalf.tag_id = calfTag;
+      pendingCalf.animalType = animalType;
+      pendingCalf.dateOfBirth = dob;
+      pendingCalf.dameId = motherTag;
+      pendingCalf.sireId = sireTag;
+      pendingCalf.farmId = farmId;
+      pendingCalf.onboardingType = 'CALVING';
+      await pendingCalf.save();
+      
+      const pendingCattle = await CattleModel.findOne({
+        tag: { $in: searchTags },
+        isPendingDetails: true,
+        isDeleted: false
+      });
+      
+      if (pendingCattle) {
+        pendingCattle.tag = calfTag;
+        pendingCattle.cattleType = animalType;
+        pendingCattle.dateOfBirth = dob;
+        pendingCattle.dameId = motherTag;
+        pendingCattle.sireId = sireTag;
+        pendingCattle.farmId = farmId;
+        pendingCattle.onboardingType = 'CALVING';
+        await pendingCattle.save();
+      }
+    } else {
+      // Check if an active non-pending animal already exists with the calfTag (to prevent collision)
+      const collisionAnimal = await LiveStock.findOne({
+        tag_id: calfTag,
+        isPendingDetails: { $ne: true },
+        isDeleted: false
+      });
+      
+      if (!collisionAnimal) {
+        // Create new pending calf in LiveStock
+        await LiveStock.create({
+          tag_id: calfTag,
+          animalType: animalType,
+          shedId: null,
+          farmId: farmId,
+          dateOfBirth: dob,
+          dameId: motherTag,
+          dameBreed: '',
+          sireId: sireTag,
+          sireBreed: '',
+          farmBorn: 'Yes',
+          status: 'ACTIVE',
+          isPendingDetails: true,
+          onboardingType: 'CALVING'
+        });
+        
+        // Create new pending calf in Cattle
+        await CattleModel.create({
+          tag: calfTag,
+          cattleType: animalType,
+          shed: '-',
+          farmId: farmId,
+          dateOfBirth: dob,
+          dameId: motherTag,
+          dameBreed: '',
+          sireId: sireTag,
+          sireBreed: '',
+          farmBorn: 'Yes',
+          status: 'ACTIVE',
+          isPendingDetails: true,
+          onboardingType: 'CALVING'
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Non-blocking calf synchronization error:', err);
+  }
 }

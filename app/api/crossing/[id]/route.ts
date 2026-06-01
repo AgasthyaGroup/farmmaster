@@ -5,6 +5,7 @@ import { resolveTagString } from '@/src/models/Logs';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse } from '@/src/utils/responses';
 import mongoose from 'mongoose';
+import { syncCalfRecord } from '../route';
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE'], async () => {
@@ -12,6 +13,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       const { id } = await params;
       const body = await req.json();
       await dbConnect();
+
+      const oldRecord = await CrossingLog.findById(id);
+      if (!oldRecord || oldRecord.isDeleted) return errorResponse('CrossingLog not found', 404);
 
       // Normalize tag / tag_id / tagId if present in update body
       const tagInput = body.tag_id || body.tagId || body.tag || '';
@@ -35,6 +39,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
       const record = await CrossingLog.findByIdAndUpdate(id, body, { new: true, runValidators: true });
       if (!record || record.isDeleted) return errorResponse('CrossingLog not found', 404);
+
+      // Sync the born calf record on update
+      if (record.calfTag || oldRecord.calfTag) {
+        await syncCalfRecord(record, oldRecord.calfTag);
+      }
+
       return successResponse(record, 'CrossingLog updated successfully');
     } catch (error: any) {
       console.error('[PUT /api/crossing/[id]] Unhandled error:', error);
@@ -52,8 +62,18 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     try {
       const { id } = await params;
       await dbConnect();
+      
+      const oldRecord = await CrossingLog.findById(id);
+      if (!oldRecord) return errorResponse('CrossingLog not found', 404);
+
       const record = await CrossingLog.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
       if (!record) return errorResponse('CrossingLog not found', 404);
+
+      // Clean up the pending calf record if it was pending details
+      if (oldRecord.calfTag) {
+        await syncCalfRecord({ calfTag: '', tag_id: oldRecord.tag_id }, oldRecord.calfTag);
+      }
+
       return successResponse(null, 'CrossingLog deleted successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);
