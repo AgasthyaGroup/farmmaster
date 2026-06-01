@@ -115,6 +115,23 @@ export async function POST(
         // 5. Create new operational log record (custom validators will trigger automatically)
         const record = await LogModel.create(body);
 
+        // ── If this is a Shed Shifting Log, update the animal's current shed assignment
+        if (normalizedType === 'shed' && body.newShed) {
+          try {
+            await LiveStock.findOneAndUpdate(
+              { tag_id: cleanTag, isDeleted: false },
+              { shedId: body.newShed }
+            );
+            const CattleModel = mongoose.models.Cattle || mongoose.model('Cattle');
+            await CattleModel.findOneAndUpdate(
+              { tagId: cleanTag, isDeleted: false },
+              { shed: body.newShed }
+            );
+          } catch (syncErr) {
+            console.error('Non-blocking livestock shed sync error during creation:', syncErr);
+          }
+        }
+
         return createdResponse(record, `${type.charAt(0).toUpperCase() + type.slice(1)} Log created successfully`);
       } catch (error: any) {
         console.error('[POST /api/logs/[type]] Unhandled error:', error);

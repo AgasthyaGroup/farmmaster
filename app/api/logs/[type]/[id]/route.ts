@@ -74,6 +74,26 @@ export async function PUT(
       if (!record || record.isDeleted) {
         return errorResponse('Log record not found', 404);
       }
+
+      // ── If this is a Shed Shifting Log, update the animal's current shed assignment
+      if (String(type).trim().toLowerCase() === 'shed' && record.newShed) {
+        try {
+          const cleanTag = String(record.tag_id).trim().toUpperCase();
+          const LiveStock = mongoose.models.LiveStock || mongoose.model('LiveStock');
+          await LiveStock.findOneAndUpdate(
+            { tag_id: cleanTag, isDeleted: false },
+            { shedId: record.newShed }
+          );
+          const CattleModel = mongoose.models.Cattle || mongoose.model('Cattle');
+          await CattleModel.findOneAndUpdate(
+            { tagId: cleanTag, isDeleted: false },
+            { shed: record.newShed }
+          );
+        } catch (syncErr) {
+          console.error('Non-blocking livestock shed sync error during update:', syncErr);
+        }
+      }
+
       return successResponse(record, 'Log record updated successfully');
     } catch (error: any) {
       console.error('[PUT /api/logs/[type]/[id]] Unhandled error:', error);
