@@ -245,3 +245,85 @@ export const SaleLog: Model<ISaleLog> =
 
 export const TreatmentLog: Model<ITreatmentLog> =
   mongoose.models.TreatmentLog || mongoose.model<ITreatmentLog>('TreatmentLog', TreatmentLogSchema);
+
+// ─── SHED LOG ─────────────────────────────────────────────────────────────────
+
+export interface IShedLog extends Document {
+  tag_id: string;
+  shiftingDate?: Date;
+  oldShed?: string;
+  newShed?: string;
+  reason?: string;
+  farmId?: mongoose.Types.ObjectId;
+  isDeleted: boolean;
+}
+
+const ShedLogSchema = new Schema<IShedLog>(
+  {
+    tag_id: {
+      type: String,
+      required: [true, 'tag_id is required — every shed log must reference an active livestock tag'],
+      trim: true,
+      uppercase: true,
+      index: true,
+      validate: {
+        validator: validateLiveStockTag,
+        message: 'Data Validation Error: Cannot log transaction. The targeted Tag ID does not exist in the Live Stock registry.',
+      },
+    },
+    shiftingDate: { type: Date, default: Date.now, set: safeDateParse },
+    oldShed: { type: String, trim: true, default: '' },
+    newShed: { type: String, trim: true, default: '' },
+    reason: { type: String, trim: true, default: '' },
+    farmId: { type: Schema.Types.ObjectId, ref: 'Farm', index: true, default: null },
+    isDeleted: { type: Boolean, default: false, index: true },
+  },
+  { timestamps: true }
+);
+
+ShedLogSchema.index({ farmId: 1, tag_id: 1 });
+
+// ─── PURCHASE LOG ─────────────────────────────────────────────────────────────
+
+export interface IPurchaseLog extends Document {
+  tag_id: string;
+  sellerName?: string;
+  sellerContact?: string;
+  price?: number;
+  purchaseDate?: Date;
+  shed?: string;
+  farmId?: mongoose.Types.ObjectId;
+  isDeleted: boolean;
+}
+
+const PurchaseLogSchema = new Schema<IPurchaseLog>(
+  {
+    tag_id: {
+      type: String,
+      required: [true, 'tag_id is required — every purchase log must reference an active livestock tag'],
+      trim: true,
+      uppercase: true,
+      index: true,
+      validate: {
+        validator: validateLiveStockTag,
+        message: 'Data Validation Error: Cannot log transaction. The targeted Tag ID does not exist in the Live Stock registry.',
+      },
+    },
+    sellerName: { type: String, trim: true, default: '' },
+    sellerContact: { type: String, trim: true, default: '' },
+    price: { type: Number, default: 0, min: 0 },
+    purchaseDate: { type: Date, default: Date.now, set: safeDateParse },
+    shed: { type: String, trim: true, default: '' },
+    farmId: { type: Schema.Types.ObjectId, ref: 'Farm', index: true, default: null },
+    isDeleted: { type: Boolean, default: false, index: true },
+  },
+  { timestamps: true }
+);
+
+PurchaseLogSchema.index({ farmId: 1, tag_id: 1 });
+
+export const ShedLog: Model<IShedLog> =
+  mongoose.models.ShedLog || mongoose.model<IShedLog>('ShedLog', ShedLogSchema);
+
+export const PurchaseLog: Model<IPurchaseLog> =
+  mongoose.models.PurchaseLog || mongoose.model<IPurchaseLog>('PurchaseLog', PurchaseLogSchema);

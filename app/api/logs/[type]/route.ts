@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import dbConnect from '@/src/database/dbConnection';
-import { CrossingLog, SaleLog, TreatmentLog, resolveTagString } from '@/src/models/Logs';
+import { CrossingLog, SaleLog, TreatmentLog, resolveTagString, ShedLog, PurchaseLog } from '@/src/models/Logs';
 import LiveStock from '@/src/models/LiveStock';
 import Farm from '@/src/models/Farm';
 import { withAuth } from '@/src/utils/authGuard';
@@ -28,8 +28,12 @@ export async function POST(
           LogModel = SaleLog;
         } else if (normalizedType === 'treatment') {
           LogModel = TreatmentLog;
+        } else if (normalizedType === 'shed') {
+          LogModel = ShedLog;
+        } else if (normalizedType === 'purchase') {
+          LogModel = PurchaseLog;
         } else {
-          return errorResponse(`Invalid log type: '${type}'. Allowed types are: crossing, sale, treatment.`, 400);
+          return errorResponse(`Invalid log type: '${type}'. Allowed types are: crossing, sale, treatment, shed, purchase.`, 400);
         }
 
         // 2. Parse request JSON body
@@ -131,6 +135,43 @@ export async function POST(
         }
 
         return errorResponse(error.message || 'Internal server error occurred', 500);
+      }
+    }
+  );
+}
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ type: string }> }
+) {
+  return withAuth(
+    req,
+    ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'HEALTH'],
+    async () => {
+      try {
+        const { type } = await params;
+        const normalizedType = String(type).trim().toLowerCase();
+
+        let LogModel: any;
+        if (normalizedType === 'crossing') {
+          LogModel = CrossingLog;
+        } else if (normalizedType === 'sale') {
+          LogModel = SaleLog;
+        } else if (normalizedType === 'treatment') {
+          LogModel = TreatmentLog;
+        } else if (normalizedType === 'shed') {
+          LogModel = ShedLog;
+        } else if (normalizedType === 'purchase') {
+          LogModel = PurchaseLog;
+        } else {
+          return errorResponse(`Invalid log type: '${type}'.`, 400);
+        }
+
+        await dbConnect();
+        const records = await LogModel.find({ isDeleted: false }).sort({ createdAt: -1 });
+        return successResponse(records, `${type} logs fetched successfully`);
+      } catch (error: any) {
+        return errorResponse(error.message || 'Failed to fetch logs', 500);
       }
     }
   );
