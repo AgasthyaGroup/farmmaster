@@ -30,6 +30,8 @@ const VaccinationLogSchema = new Schema(
     },
     // Animal display identifier (mirrors tag_id)
     animalId: { type: String, required: true, trim: true },
+    // Animal type (COW, BUFFALO, etc.) — populated from livestock registry
+    animalType: { type: String, trim: true, default: '' },
     date: { type: Date, required: true },
     shedId: { type: String, required: true },
     vaccinationName: { type: String, required: true },

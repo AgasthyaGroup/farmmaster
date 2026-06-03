@@ -185,8 +185,13 @@ SaleLogSchema.index({ farmId: 1, tag_id: 1 });
 export interface ITreatmentLog extends Document {
   tag_id: string;
   tagId?: string;
+  animalType?: string;
+  shedId?: string;
+  symptoms?: string;
   diagnosis?: string;
+  treatment?: string;
   treatmentDetails?: string;
+  healthStatus?: string;
   medicinesUsed?: string;
   startDate?: Date;
   endDate?: Date;
@@ -211,18 +216,26 @@ const TreatmentLogSchema = new Schema<ITreatmentLog>(
         message: 'Validation failed: Animal with Tag ID {VALUE} does not exist in active Live Stock.',
       },
     },
-    tagId: { type: String, trim: true, default: '' },
-    diagnosis: { type: String, trim: true, default: '' },
+    tagId:         { type: String, trim: true, default: '' },
+    // Animal info — populated from livestock registry by frontend before save
+    animalType:    { type: String, trim: true, default: '' },
+    shedId:        { type: String, trim: true, default: '' },
+    // Treatment fields — frontend-facing names (match LogForm field names)
+    symptoms:      { type: String, trim: true, default: '' },
+    diagnosis:     { type: String, trim: true, default: '' },
+    treatment:     { type: String, trim: true, default: '' }, // "Action Taken" in UI
+    healthStatus:  { type: String, trim: true, default: '' }, // "Health Status" in UI
+    // Legacy / extended fields kept for backward compatibility
     treatmentDetails: { type: String, trim: true, default: '' },
     medicinesUsed: { type: String, trim: true, default: '' },
-    startDate: { type: Date, default: null, set: safeDateParse },
-    endDate: { type: Date, default: null, set: safeDateParse },
-    administeredBy: { type: String, trim: true, default: '' },
-    status: { type: String, trim: true, default: '' },
-    cost: { type: Number, default: 0, min: 0 },
-    remarks: { type: String, trim: true, default: '' },
-    farmId: { type: Schema.Types.ObjectId, ref: 'Farm', index: true, default: null },
-    isDeleted: { type: Boolean, default: false, index: true },
+    startDate:     { type: Date, default: null, set: safeDateParse },
+    endDate:       { type: Date, default: null, set: safeDateParse },
+    administeredBy:{ type: String, trim: true, default: '' },
+    status:        { type: String, trim: true, default: '' }, // legacy alias for healthStatus
+    cost:          { type: Number, default: 0, min: 0 },
+    remarks:       { type: String, trim: true, default: '' },
+    farmId:        { type: Schema.Types.ObjectId, ref: 'Farm', index: true, default: null },
+    isDeleted:     { type: Boolean, default: false, index: true },
   },
   { timestamps: true }
 );
