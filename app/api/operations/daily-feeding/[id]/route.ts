@@ -26,6 +26,27 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       const { id } = await params;
       const body = await req.json();
       await dbConnect();
+      // Sanitize optional feeding attributes to numeric default 0
+      const feedingFields = [
+        'greenGrass',
+        'dryGrass',
+        'cottonCake',
+        'chunni',
+        'maize',
+        'wheatBran',
+        'salt',
+        'oralCalcium',
+        'mineralMixture'
+      ];
+      feedingFields.forEach(f => {
+        if (body[f] === "" || body[f] === undefined || body[f] === null) {
+          body[f] = 0;
+        } else {
+          const val = Number(body[f]);
+          body[f] = isNaN(val) ? 0 : val;
+        }
+      });
+
       const record = await DailyFeeding.findByIdAndUpdate(id, body, { new: true, runValidators: true });
       if (!record || record.isDeleted) {
         return errorResponse('DailyFeeding not found', 404);

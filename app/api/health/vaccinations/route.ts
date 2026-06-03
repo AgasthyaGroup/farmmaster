@@ -85,6 +85,13 @@ export async function POST(req: NextRequest) {
         delete body.farmId;
       }
 
+      if (!body.date) {
+        body.date = new Date();
+      }
+      if (!body.shedId) {
+        body.shedId = '';
+      }
+
       const record = await VaccinationLog.create(body);
       return createdResponse(record, 'VaccinationLog created successfully');
     } catch (error: any) {

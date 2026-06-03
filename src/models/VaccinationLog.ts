@@ -1,4 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
+import { safeDateParse } from './Logs';
 
 /**
  * VaccinationLog
@@ -32,12 +33,12 @@ const VaccinationLogSchema = new Schema(
     animalId: { type: String, required: true, trim: true },
     // Animal type (COW, BUFFALO, etc.) — populated from livestock registry
     animalType: { type: String, trim: true, default: '' },
-    date: { type: Date, required: true },
-    shedId: { type: String, required: true },
+    date: { type: Date, required: true, default: Date.now, set: safeDateParse },
+    shedId: { type: String, required: false, default: '' },
     vaccinationName: { type: String, required: true },
     batchNo: { type: String, required: true },
-    manufactureDate: { type: Date, required: true },
-    expiryDate: { type: Date, required: true },
+    manufactureDate: { type: Date, required: true, set: safeDateParse },
+    expiryDate: { type: Date, required: true, set: safeDateParse },
     treatmentOrStatus: { type: String, required: false },
     farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: false, index: true },
     isDeleted: { type: Boolean, default: false, index: true },
@@ -49,8 +50,8 @@ const VaccinationLogSchema = new Schema(
 VaccinationLogSchema.index({ farmId: 1, tag_id: 1 });
 VaccinationLogSchema.index({ farmId: 1, tagId: 1 });
 
-// Pre-save hook: keep tag_id and tagId in sync so both fields are always populated
-VaccinationLogSchema.pre('save', function (this: any) {
+// Pre-validate hook: keep tag_id, tagId and animalId in sync before validation
+VaccinationLogSchema.pre('validate', function (this: any) {
   if (this.tagId && !this.tag_id) {
     this.tag_id = String(this.tagId).trim().toUpperCase();
   }

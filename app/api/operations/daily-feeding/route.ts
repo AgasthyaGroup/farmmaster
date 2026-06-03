@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
       // ── Validation Interceptor Check ──────────────────────────────────────
       const cleanTag = String(body.tag_id).trim().toUpperCase();
       const LiveStock = mongoose.models.LiveStock || mongoose.model('LiveStock');
-      const animalExists = await LiveStock.findOne({ tag_id: cleanTag, isDeleted: false });
+      const isRowLog = cleanTag.startsWith('ROW ');
+      const animalExists = isRowLog ? true : await LiveStock.findOne({ tag_id: cleanTag, isDeleted: false });
       if (!animalExists) {
         return errorResponse(
           'Data Validation Error: Cannot log transaction. The targeted Tag ID does not exist in the Live Stock registry.',
@@ -62,6 +63,27 @@ export async function POST(req: NextRequest) {
       } else {
         body.date = new Date();
       }
+
+      // Sanitize optional feeding attributes to numeric default 0
+      const feedingFields = [
+        'greenGrass',
+        'dryGrass',
+        'cottonCake',
+        'chunni',
+        'maize',
+        'wheatBran',
+        'salt',
+        'oralCalcium',
+        'mineralMixture'
+      ];
+      feedingFields.forEach(f => {
+        if (body[f] === "" || body[f] === undefined || body[f] === null) {
+          body[f] = 0;
+        } else {
+          const val = Number(body[f]);
+          body[f] = isNaN(val) ? 0 : val;
+        }
+      });
 
       const record = await DailyFeeding.create(body);
       return createdResponse(record, 'DailyFeeding created successfully');
