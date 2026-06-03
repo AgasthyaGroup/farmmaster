@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
 
       // Fallback 2: System default (first active farm found)
       if (!resolvedFarmId) {
-        const defaultFarm = await Farm.findOne({ isDeleted: false });
+        const defaultFarm = await Farm.findOne({ isDeleted: { $ne: true } });
         if (defaultFarm) {
           resolvedFarmId = defaultFarm._id.toString();
         }
