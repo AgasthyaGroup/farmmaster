@@ -10,8 +10,53 @@ export async function GET(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'GRASS_COLLECTION', 'GRASS'], async () => {
     try {
       await dbConnect();
-      const records = await GrassCollection.find({ isDeleted: false }).populate(['farmId']).sort({ createdAt: -1 });
-      return successResponse(records, 'GrassCollection fetched successfully');
+      const records = await GrassCollection.find({ isDeleted: false }).sort({ createdAt: -1 }).lean();
+
+      // Gather distinct valid ObjectIds and string codes for farmId
+      const validFarmIds: mongoose.Types.ObjectId[] = [];
+      const farmCodes: string[] = [];
+
+      records.forEach(r => {
+        if (r.farmId) {
+          const valStr = String(r.farmId).trim();
+          if (mongoose.Types.ObjectId.isValid(valStr)) {
+            validFarmIds.push(new mongoose.Types.ObjectId(valStr));
+          } else {
+            farmCodes.push(valStr);
+          }
+        }
+      });
+
+      // Query Farm collection for matches by either ObjectId or Code
+      const farms = await Farm.find({
+        $or: [
+          { _id: { $in: validFarmIds } },
+          { code: { $in: farmCodes } }
+        ]
+      }).lean();
+
+      // Index farms for O(1) lookup
+      const farmByIdMap = new Map(farms.map(f => [f._id.toString(), f]));
+      const farmByCodeMap = new Map(farms.map(f => [f.code.toUpperCase(), f]));
+
+      // Populate records
+      const populated = records.map(r => {
+        let farmObj = null;
+        if (r.farmId) {
+          const valStr = String(r.farmId).trim();
+          if (mongoose.Types.ObjectId.isValid(valStr)) {
+            farmObj = farmByIdMap.get(valStr);
+          } else {
+            farmObj = farmByCodeMap.get(valStr.toUpperCase());
+          }
+        }
+        return {
+          ...r,
+          farmId: farmObj || (r.farmId ? { name: String(r.farmId) } : null)
+        };
+      });
+
+      return successResponse(populated, 'GrassCollection fetched successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);
     }

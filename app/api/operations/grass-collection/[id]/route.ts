@@ -3,17 +3,36 @@ import dbConnect from '@/src/database/dbConnection';
 import GrassCollection from '@/src/models/GrassCollection';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse } from '@/src/utils/responses';
+import mongoose from 'mongoose';
+import Farm from '@/src/models/Farm';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'GRASS_COLLECTION', 'GRASS'], async () => {
     try {
       const { id } = await params;
       await dbConnect();
-      const record = await GrassCollection.findById(id).populate(['farmId']);
+      const record = await GrassCollection.findById(id).lean();
       if (!record || record.isDeleted) {
         return errorResponse('GrassCollection not found', 404);
       }
-      return successResponse(record, 'GrassCollection fetched successfully');
+
+      // Manually populate farmId
+      let farmObj = null;
+      if (record.farmId) {
+        const valStr = String(record.farmId).trim();
+        if (mongoose.Types.ObjectId.isValid(valStr)) {
+          farmObj = await Farm.findById(valStr).lean();
+        } else {
+          farmObj = await Farm.findOne({ code: valStr }).lean();
+        }
+      }
+
+      const populated = {
+        ...record,
+        farmId: farmObj || (record.farmId ? { name: String(record.farmId) } : null)
+      };
+
+      return successResponse(populated, 'GrassCollection fetched successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);
     }
