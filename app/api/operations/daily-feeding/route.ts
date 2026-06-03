@@ -7,7 +7,7 @@ import { resolveTagString } from '@/src/models/Logs';
 import mongoose from 'mongoose';
 
 export async function GET(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'INVENTORY'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'INVENTORY', 'FEEDING'], async () => {
     try {
       await dbConnect();
       const records = await DailyFeeding.find({ isDeleted: false }).sort({ createdAt: -1 });
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'INVENTORY'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'INVENTORY', 'FEEDING'], async () => {
     try {
       const body = await req.json();
       await dbConnect();

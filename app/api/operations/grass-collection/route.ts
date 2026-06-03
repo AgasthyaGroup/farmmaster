@@ -7,7 +7,7 @@ import { successResponse, errorResponse, createdResponse } from '@/src/utils/res
 import mongoose from 'mongoose';
 
 export async function GET(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'GRASS_COLLECTION'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'GRASS_COLLECTION', 'GRASS'], async () => {
     try {
       await dbConnect();
       const records = await GrassCollection.find({ isDeleted: false }).populate(['farmId']).sort({ createdAt: -1 });
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'GRASS_COLLECTION'], async (user) => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'GRASS_COLLECTION', 'GRASS'], async (user) => {
     try {
       const body = await req.json();
       await dbConnect();

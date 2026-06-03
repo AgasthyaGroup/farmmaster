@@ -53,6 +53,16 @@ export async function PUT(
       // Normalize tag / tag_id / tagId if present in update body
       const tagInput = body.tag_id || body.tagId || body.tag || '';
       const logTypeNormalized = String(type).trim().toLowerCase();
+
+      if (logTypeNormalized === 'purchase') {
+        if (!body.sellerName && body.purchaseFrom) {
+          body.sellerName = body.purchaseFrom;
+        }
+        if (!body.price && body.purchasePrice) {
+          body.price = body.purchasePrice;
+        }
+      }
+
       if (tagInput) {
         body.tag_id = String(tagInput).trim().toUpperCase();
         body.tag_id = (await resolveTagString(body.tag_id)).toUpperCase();

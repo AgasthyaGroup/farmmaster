@@ -48,6 +48,15 @@ export async function POST(
         const tagInput = body.tag_id || body.tagId || body.tag || '';
         body.tag_id = String(tagInput).trim().toUpperCase();
 
+        if (normalizedType === 'purchase') {
+          if (!body.sellerName && body.purchaseFrom) {
+            body.sellerName = body.purchaseFrom;
+          }
+          if (!body.price && body.purchasePrice) {
+            body.price = body.purchasePrice;
+          }
+        }
+
         if (!body.tag_id) {
           return errorResponse('tag_id is required for child operational logs', 400);
         }
