@@ -143,7 +143,6 @@ export async function POST(
             await LiveStock.create({
               tag_id: cleanTag,
               animalType: 'PENDING',
-              shedId: body.shed || null,
               farmId: body.farmId || null,
               purchaseDate: body.purchaseDate || new Date(),
               purchasePrice: body.price || 0,
@@ -158,7 +157,6 @@ export async function POST(
             await CattleModel.create({
               tag: cleanTag,
               cattleType: 'PENDING',
-              shed: body.shed || '-',
               farmId: body.farmId || null,
               purchaseDate: body.purchaseDate || new Date(),
               purchasePrice: body.price || 0,

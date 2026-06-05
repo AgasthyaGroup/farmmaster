@@ -308,7 +308,6 @@ export interface IPurchaseLog extends Document {
   sellerContact?: string;
   price?: number;
   purchaseDate?: Date;
-  shed?: string;
   farmId?: mongoose.Types.ObjectId;
   isDeleted: boolean;
 }
@@ -326,7 +325,6 @@ const PurchaseLogSchema = new Schema<IPurchaseLog>(
     sellerContact: { type: String, trim: true, default: '' },
     price: { type: Number, default: 0, min: 0 },
     purchaseDate: { type: Date, default: Date.now, set: safeDateParse },
-    shed: { type: String, trim: true, default: '' },
     farmId: { type: Schema.Types.ObjectId, ref: 'Farm', index: true, default: null },
     isDeleted: { type: Boolean, default: false, index: true },
   },
