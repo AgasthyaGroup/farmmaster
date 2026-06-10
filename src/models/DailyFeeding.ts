@@ -34,7 +34,7 @@ const DailyFeedingSchema = new Schema(
     farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: false, index: true },
     isDeleted: { type: Boolean, default: false, index: true },
   },
-  { timestamps: true }
+  { timestamps: true, strict: false }
 );
 
 // Compound index for per-farm, per-animal, per-date queries
