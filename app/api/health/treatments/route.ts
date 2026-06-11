@@ -51,9 +51,9 @@ export async function POST(req: NextRequest) {
         body.tag_id = (body.tagId || body.tag || body.animalId || '').trim();
       }
 
-      // Guard: refuse treatment logs with no asset linkage
+      // Default tag_id to GENERAL if none is provided (not required anymore)
       if (!body.tag_id) {
-        return errorResponse('tag_id (animal tag) is required for treatment logs', 400);
+        body.tag_id = 'GENERAL';
       }
 
       await dbConnect();
@@ -66,13 +66,15 @@ export async function POST(req: NextRequest) {
 
       // ── Validation Interceptor Check ──────────────────────────────────────
       const cleanTag = String(body.tag_id).trim().toUpperCase();
-      const LiveStock = mongoose.models.LiveStock || mongoose.model('LiveStock');
-      const animalExists = await LiveStock.findOne({ tag_id: cleanTag, isDeleted: false });
-      if (!animalExists) {
-        return errorResponse(
-          'Data Validation Error: Cannot log transaction. The targeted Tag ID does not exist in the Live Stock registry.',
-          400
-        );
+      if (cleanTag !== 'GENERAL') {
+        const LiveStock = mongoose.models.LiveStock || mongoose.model('LiveStock');
+        const animalExists = await LiveStock.findOne({ tag_id: cleanTag, isDeleted: false });
+        if (!animalExists) {
+          return errorResponse(
+            'Data Validation Error: Cannot log transaction. The targeted Tag ID does not exist in the Live Stock registry.',
+            400
+          );
+        }
       }
 
       // ── Structural date validation: startDate must be <= endDate ─────────

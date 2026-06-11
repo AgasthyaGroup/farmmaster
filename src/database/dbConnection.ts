@@ -12,11 +12,13 @@ import '../models/Logs'; // registers CrossingLog, SaleLog, and TreatmentLog
 import '../models/VaccinationLog';
 import '../models/FeedInventory';
 import '../models/MedicineInventory';
+import '../models/Medicine';
 import '../models/GrassCollection';
 import '../models/DailyFeeding';
 import '../models/MilkCollection';
 import '../models/MilkQuality';
 import '../models/Department';
+import '../models/TagSuffix';
 
 /**
  * Global is used here to maintain a cached connection across hot reloads

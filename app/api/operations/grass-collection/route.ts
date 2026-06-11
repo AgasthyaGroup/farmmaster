@@ -114,6 +114,30 @@ export async function POST(req: NextRequest) {
       }
 
       const record = await GrassCollection.create(body);
+
+      // Automatically add/update FeedInventory for 'Green Grass'
+      const FeedInventory = mongoose.models.FeedInventory || mongoose.model('FeedInventory');
+      const latestFeed = await FeedInventory.findOne({
+        feedType: { $regex: /^green\s*grass$/i },
+        farmId: record.farmId,
+        isDeleted: false
+      }).sort({ createdAt: -1 });
+
+      const oldStock = latestFeed ? latestFeed.remainingStock : 0;
+      const bought = record.weight || 0;
+      const remainingStock = oldStock + bought;
+
+      await FeedInventory.create({
+        feedType: 'Green Grass',
+        oldStock,
+        bought,
+        usage: 0,
+        remainingStock,
+        purchaseDate: record.date || new Date(),
+        farmId: record.farmId,
+        isDeleted: false
+      });
+
       return createdResponse(record, 'GrassCollection created successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);

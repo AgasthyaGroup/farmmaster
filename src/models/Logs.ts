@@ -58,6 +58,9 @@ async function validateLiveStockTag(this: any, value: string): Promise<boolean> 
   if (!value) return false;
   try {
     let cleanTag = String(value).trim().toUpperCase();
+    if (cleanTag === 'GENERAL' || cleanTag === 'NONE' || cleanTag === 'N/A' || cleanTag === '') {
+      return true;
+    }
     if (/^[0-9a-fA-F]{24}$/.test(cleanTag)) {
       cleanTag = (await resolveTagString(cleanTag)).toUpperCase();
     }
@@ -207,7 +210,8 @@ const TreatmentLogSchema = new Schema<ITreatmentLog>(
   {
     tag_id: {
       type: String,
-      required: [true, 'tag_id is required — every treatment log must reference an active livestock tag'],
+      required: false,
+      default: 'GENERAL',
       trim: true,
       uppercase: true,
       index: true,

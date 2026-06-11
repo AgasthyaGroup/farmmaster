@@ -5,6 +5,8 @@ import LiveStock from '@/src/models/LiveStock';
 import Cattle from '@/src/models/Cattle';
 import Tag from '@/src/models/Tag';
 import Farm from '@/src/models/Farm';
+import { CrossingLog } from '@/src/models/Logs';
+import MilkCollection from '@/src/models/MilkCollection';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
 import { createCattleSchema } from '@/src/utils/validation';
@@ -108,9 +110,15 @@ export function deepSanitizeCattleInput(body: any, userFarmId?: string | null) {
 
 // ─── GET API Route ─────────────────────────────────────────────────────────────
 
-export function mapLiveStockToCattle(r: any) {
+export function mapLiveStockToCattle(
+  r: any,
+  farmMap?: Map<string, string>,
+  tagToStatus?: Map<string, string>,
+  tagToAverageMilk?: Map<string, number>
+) {
   if (!r) return r;
   const doc = r.toObject ? r.toObject() : JSON.parse(JSON.stringify(r));
+  const tag = String(doc.tag_id || doc.tag || '').trim().toUpperCase();
 
   // Ensure tag is present for frontend compatibility
   if (!doc.tag) doc.tag = doc.tag_id || '';
@@ -150,6 +158,28 @@ export function mapLiveStockToCattle(r: any) {
     }
   }
 
+  // Dynamic status check from CrossingLog
+  if (tagToStatus && tagToStatus.has(tag)) {
+    doc.status = tagToStatus.get(tag);
+  } else {
+    doc.status = doc.status || 'ACTIVE';
+  }
+
+  // Dynamic milk yield check from MilkCollection
+  if (tagToAverageMilk && tagToAverageMilk.has(tag)) {
+    doc.milk = tagToAverageMilk.get(tag);
+  } else {
+    doc.milk = '-';
+  }
+
+  // Resolve Farm Name
+  if (farmMap && doc.farmId) {
+    const fId = doc.farmId.toString();
+    doc.farmName = farmMap.get(fId) || fId;
+  } else {
+    doc.farmName = '-';
+  }
+
   return doc;
 }
 
@@ -157,8 +187,66 @@ export async function GET(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'CATTLE'], async () => {
     try {
       await dbConnect();
+      
+      // Fetch all farms to map ObjectId -> Farm Name
+      const farms = await Farm.find({ isDeleted: false }).lean();
+      const farmMap = new Map(farms.map(f => [f._id.toString(), f.name]));
+      
+      // Fetch latest CrossingLog for status overrides
+      const crossingLogs = await CrossingLog.find({ isDeleted: false })
+        .sort({ crossingDate: -1, createdAt: -1 })
+        .lean();
+      
+      const tagToStatus = new Map<string, string>();
+      for (const log of crossingLogs) {
+        const tag = String(log.tag_id || log.tag || '').trim().toUpperCase();
+        if (tag && !tagToStatus.has(tag)) {
+          if (log.pregnancyStatus === 'Positive') {
+            tagToStatus.set(tag, 'PREGNANT');
+          } else if (log.pregnancyStatus === 'Pending') {
+            tagToStatus.set(tag, 'PENDING');
+          } else if (log.pregnancyStatus === 'Negative') {
+            tagToStatus.set(tag, 'ACTIVE');
+          }
+        }
+      }
+
+      // Fetch MilkCollection records to compute latest day's average (morning + evening) / 2
+      const milkCollections = await MilkCollection.find({ isDeleted: false })
+        .sort({ date: -1, createdAt: -1 })
+        .lean();
+
+      // First find the latest date per animal
+      const tagToLatestDate = new Map<string, string>();
+      for (const col of milkCollections) {
+        const tag = String(col.tag_id || col.tagId || '').trim().toUpperCase();
+        if (tag && col.date && !tagToLatestDate.has(tag)) {
+          tagToLatestDate.set(tag, new Date(col.date).toDateString());
+        }
+      }
+
+      // Sum quantities on that latest date
+      const tagToLatestSum = new Map<string, number>();
+      const tagToLatestCount = new Map<string, number>();
+      for (const col of milkCollections) {
+        const tag = String(col.tag_id || col.tagId || '').trim().toUpperCase();
+        if (tag && col.date) {
+          const dateStr = new Date(col.date).toDateString();
+          if (tagToLatestDate.get(tag) === dateStr) {
+            tagToLatestSum.set(tag, (tagToLatestSum.get(tag) || 0) + (col.quantity || 0));
+            tagToLatestCount.set(tag, (tagToLatestCount.get(tag) || 0) + 1);
+          }
+        }
+      }
+
+      const tagToAverageMilk = new Map<string, number>();
+      for (const tag of tagToLatestSum.keys()) {
+        const sum = tagToLatestSum.get(tag) || 0;
+        tagToAverageMilk.set(tag, Number((sum / 2).toFixed(2)));
+      }
+
       const records = await LiveStock.find({ isDeleted: false }).sort({ createdAt: -1 });
-      const mappedRecords = records.map(r => mapLiveStockToCattle(r));
+      const mappedRecords = records.map(r => mapLiveStockToCattle(r, farmMap, tagToStatus, tagToAverageMilk));
       return successResponse(mappedRecords, 'LiveStock fetched successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);

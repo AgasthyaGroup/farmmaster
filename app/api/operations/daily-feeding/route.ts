@@ -18,6 +18,32 @@ export async function GET(req: NextRequest) {
   });
 }
 
+async function deductFeedInventory(feedName: string, quantity: number, farmId: any, date: Date) {
+  if (quantity <= 0) return;
+  const FeedInventory = mongoose.models.FeedInventory || mongoose.model('FeedInventory');
+  
+  const latestFeed = await FeedInventory.findOne({
+    feedType: { $regex: new RegExp(`^${feedName}$`, 'i') },
+    farmId,
+    isDeleted: false
+  }).sort({ createdAt: -1 });
+
+  const oldStock = latestFeed ? latestFeed.remainingStock : 0;
+  const usage = quantity;
+  const remainingStock = oldStock - usage;
+
+  await FeedInventory.create({
+    feedType: feedName,
+    oldStock,
+    bought: 0,
+    usage,
+    remainingStock,
+    purchaseDate: date,
+    farmId,
+    isDeleted: false
+  });
+}
+
 export async function POST(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'INVENTORY', 'FEEDING'], async () => {
     try {
@@ -86,9 +112,31 @@ export async function POST(req: NextRequest) {
       });
 
       const record = await DailyFeeding.create(body);
+
+      // Deduct inventory for all consumed feeds
+      const mapping = {
+        greenGrass: 'Green Grass',
+        dryGrass: 'Dry Grass',
+        cottonCake: 'Cotton Cake',
+        chunni: 'Chunni',
+        maize: 'Maize',
+        wheatBran: 'Wheat Bran',
+        salt: 'Salt',
+        oralCalcium: 'Oral Calcium',
+        mineralMixture: 'Mineral Mixture'
+      };
+
+      for (const [key, feedName] of Object.entries(mapping)) {
+        const qty = Number(record[key]) || 0;
+        if (qty > 0) {
+          await deductFeedInventory(feedName, qty, record.farmId, record.date);
+        }
+      }
+
       return createdResponse(record, 'DailyFeeding created successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);
     }
   });
 }
+
