@@ -5,7 +5,7 @@ import { resolveTagString } from '@/src/models/Logs';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse } from '@/src/utils/responses';
 import mongoose from 'mongoose';
-import { syncCalfRecord } from '../route';
+import { syncCalfRecord, updateAnimalStatusFromCrossing } from '../route';
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE'], async () => {
@@ -44,6 +44,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       if (record.calfTag || oldRecord.calfTag) {
         await syncCalfRecord(record, oldRecord.calfTag);
       }
+
+      // Update animal status based on pregnancyStatus/calving
+      await updateAnimalStatusFromCrossing(record.tag_id, record.pregnancyStatus, record.actualCalvingDate);
 
       return successResponse(record, 'CrossingLog updated successfully');
     } catch (error: any) {

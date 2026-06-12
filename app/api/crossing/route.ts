@@ -144,6 +144,9 @@ export async function POST(req: NextRequest) {
         await syncCalfRecord(record);
       }
 
+      // Update animal status based on pregnancyStatus/calving
+      await updateAnimalStatusFromCrossing(record.tag_id, record.pregnancyStatus, record.actualCalvingDate);
+
       return createdResponse(record, 'CrossingLog created successfully');
     } catch (error: any) {
       console.error('[POST /api/crossing] Unhandled error:', error);
@@ -192,10 +195,21 @@ export async function syncCalfRecord(crossingRecord: any, oldCalfTag?: string) {
     
     // Determine mother's animal type for prefilling
     let animalType = 'CATTLE';
+    let dameBreed = '';
+    let sireBreed = '';
+
     if (motherTag) {
       const mother = await LiveStock.findOne({ tag_id: motherTag, isDeleted: false });
-      if (mother && mother.animalType) {
-        animalType = mother.animalType;
+      if (mother) {
+        if (mother.animalType) animalType = mother.animalType;
+        if (mother.breed) dameBreed = mother.breed;
+      }
+    }
+
+    if (sireTag) {
+      const father = await LiveStock.findOne({ tag_id: sireTag, isDeleted: false });
+      if (father && father.breed) {
+        sireBreed = father.breed;
       }
     }
     
@@ -215,7 +229,9 @@ export async function syncCalfRecord(crossingRecord: any, oldCalfTag?: string) {
       pendingCalf.animalType = animalType;
       pendingCalf.dateOfBirth = dob;
       pendingCalf.dameId = motherTag;
+      pendingCalf.dameBreed = dameBreed;
       pendingCalf.sireId = sireTag;
+      pendingCalf.sireBreed = sireBreed;
       pendingCalf.farmId = farmId;
       pendingCalf.onboardingType = 'CALVING';
       await pendingCalf.save();
@@ -231,7 +247,9 @@ export async function syncCalfRecord(crossingRecord: any, oldCalfTag?: string) {
         pendingCattle.cattleType = animalType;
         pendingCattle.dateOfBirth = dob;
         pendingCattle.dameId = motherTag;
+        pendingCattle.dameBreed = dameBreed;
         pendingCattle.sireId = sireTag;
+        pendingCattle.sireBreed = sireBreed;
         pendingCattle.farmId = farmId;
         pendingCattle.onboardingType = 'CALVING';
         await pendingCattle.save();
@@ -253,9 +271,9 @@ export async function syncCalfRecord(crossingRecord: any, oldCalfTag?: string) {
           farmId: farmId,
           dateOfBirth: dob,
           dameId: motherTag,
-          dameBreed: '',
+          dameBreed: dameBreed,
           sireId: sireTag,
-          sireBreed: '',
+          sireBreed: sireBreed,
           farmBorn: 'Yes',
           status: 'ACTIVE',
           isPendingDetails: true,
@@ -270,9 +288,9 @@ export async function syncCalfRecord(crossingRecord: any, oldCalfTag?: string) {
           farmId: farmId,
           dateOfBirth: dob,
           dameId: motherTag,
-          dameBreed: '',
+          dameBreed: dameBreed,
           sireId: sireTag,
-          sireBreed: '',
+          sireBreed: sireBreed,
           farmBorn: 'Yes',
           status: 'ACTIVE',
           isPendingDetails: true,
@@ -282,5 +300,36 @@ export async function syncCalfRecord(crossingRecord: any, oldCalfTag?: string) {
     }
   } catch (err) {
     console.error('Non-blocking calf synchronization error:', err);
+  }
+}
+
+/**
+ * Update parent animal's status in LiveStock and Cattle registries based on PD pregnancy tests and Calving.
+ */
+export async function updateAnimalStatusFromCrossing(tagId: string, pregnancyStatus?: string, actualCalvingDate?: any) {
+  try {
+    if (!tagId) return;
+    const cleanTag = String(tagId).trim().toUpperCase();
+    const LiveStock = mongoose.models.LiveStock || mongoose.model('LiveStock');
+    const CattleModel = mongoose.models.Cattle || mongoose.model('Cattle');
+
+    let newStatus: string | null = null;
+    if (actualCalvingDate) {
+      newStatus = 'ACTIVE';
+    } else if (pregnancyStatus === 'Positive') {
+      newStatus = 'PREGNANT';
+    } else if (pregnancyStatus === 'Negative') {
+      newStatus = 'EMPTY';
+    } else {
+      newStatus = 'PENDING';
+    }
+
+    if (newStatus) {
+      await LiveStock.findOneAndUpdate({ tag_id: cleanTag }, { status: newStatus });
+      await CattleModel.findOneAndUpdate({ tag: cleanTag }, { status: newStatus });
+      console.log(`[updateAnimalStatusFromCrossing] Synced status of ${cleanTag} to ${newStatus}`);
+    }
+  } catch (error) {
+    console.error('[updateAnimalStatusFromCrossing] Error updating parent animal status:', error);
   }
 }

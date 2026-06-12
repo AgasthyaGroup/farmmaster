@@ -27,22 +27,26 @@ export async function POST(req: NextRequest) {
       await dbConnect();
 
       // Resolve dynamic ObjectId to human-readable tag string if submitted by frontend selector
-      if (body.tagId) {
-        body.tagId = await resolveTagString(body.tagId);
+      // ── Normalize tagId/tag_id ──────────────────────────────────────────
+      if (!body.tagId) {
+        body.tagId = (body.tag_id || '').trim();
       }
+      if (!body.tagId) {
+        body.tagId = 'GENERAL';
+      }
+      body.tag_id = body.tagId;
 
       // ── Validation Interceptor Check ──────────────────────────────────────
-      const targetTag = String(body.tagId || body.tag_id || '').trim().toUpperCase();
-      if (!targetTag) {
-        return errorResponse('tagId (animal tag) is required for vaccination logs', 400);
-      }
-      const LiveStock = mongoose.models.LiveStock || mongoose.model('LiveStock');
-      const animalExists = await LiveStock.findOne({ tag_id: targetTag, isDeleted: false });
-      if (!animalExists) {
-        return errorResponse(
-          'Data Validation Error: Cannot log transaction. The targeted Tag ID does not exist in the Live Stock registry.',
-          400
-        );
+      const targetTag = String(body.tagId).trim().toUpperCase();
+      if (targetTag !== 'GENERAL') {
+        const LiveStock = mongoose.models.LiveStock || mongoose.model('LiveStock');
+        const animalExists = await LiveStock.findOne({ tag_id: targetTag, isDeleted: false });
+        if (!animalExists) {
+          return errorResponse(
+            'Data Validation Error: Cannot log transaction. The targeted Tag ID does not exist in the Live Stock registry.',
+            400
+          );
+        }
       }
 
       // ── Resolve farmId Dynamically ──────────────────────────────────────

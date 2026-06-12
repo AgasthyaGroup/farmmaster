@@ -63,8 +63,8 @@ const LiveStockSchema = new Schema<ILiveStock>(
       uppercase: true,
       trim: true,
       enum: {
-        values: ['ACTIVE', 'SOLD', 'DECEASED'],
-        message: 'Status must be ACTIVE, SOLD, or DECEASED',
+        values: ['ACTIVE', 'PREGNANT', 'EMPTY', 'PENDING', 'SOLD', 'DECEASED'],
+        message: 'Status must be ACTIVE, PREGNANT, EMPTY, PENDING, SOLD, or DECEASED',
       },
       default: 'ACTIVE',
     },

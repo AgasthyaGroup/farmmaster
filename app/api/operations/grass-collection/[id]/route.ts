@@ -5,6 +5,7 @@ import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse } from '@/src/utils/responses';
 import mongoose from 'mongoose';
 import Farm from '@/src/models/Farm';
+import { reconcileGreenGrassFeedInventory } from '../route';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'GRASS_COLLECTION', 'GRASS'], async () => {
@@ -56,31 +57,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         return errorResponse('GrassCollection not found', 404);
       }
 
-      const oldWeight = oldRecord.weight || 0;
-      const newWeight = record.weight || 0;
-      const diff = newWeight - oldWeight;
-
-      if (diff !== 0) {
-        const FeedInventory = mongoose.models.FeedInventory || mongoose.model('FeedInventory');
-        const latestFeed = await FeedInventory.findOne({
-          feedType: { $regex: /^green\s*grass$/i },
-          farmId: record.farmId,
-          isDeleted: false
-        }).sort({ createdAt: -1 });
-
-        const oldStock = latestFeed ? latestFeed.remainingStock : 0;
-        const remainingStock = oldStock + diff;
-
-        await FeedInventory.create({
-          feedType: 'Green Grass',
-          oldStock,
-          bought: diff,
-          usage: 0,
-          remainingStock,
-          purchaseDate: record.date || new Date(),
-          farmId: record.farmId,
-          isDeleted: false
-        });
+      if (record.farmId && record.date) {
+        await reconcileGreenGrassFeedInventory(record.farmId, record.date);
+        if (oldRecord.date && (new Date(record.date).toDateString() !== new Date(oldRecord.date).toDateString() || String(record.farmId) !== String(oldRecord.farmId))) {
+          await reconcileGreenGrassFeedInventory(oldRecord.farmId, oldRecord.date);
+        }
       }
 
       return successResponse(record, 'GrassCollection updated successfully');
@@ -106,29 +87,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         return errorResponse('GrassCollection not found', 404);
       }
 
-      const oldWeight = oldRecord.weight || 0;
-      if (oldWeight > 0) {
-        const FeedInventory = mongoose.models.FeedInventory || mongoose.model('FeedInventory');
-        const latestFeed = await FeedInventory.findOne({
-          feedType: { $regex: /^green\s*grass$/i },
-          farmId: record.farmId,
-          isDeleted: false
-        }).sort({ createdAt: -1 });
-
-        const oldStock = latestFeed ? latestFeed.remainingStock : 0;
-        const diff = -oldWeight;
-        const remainingStock = oldStock + diff;
-
-        await FeedInventory.create({
-          feedType: 'Green Grass',
-          oldStock,
-          bought: diff,
-          usage: 0,
-          remainingStock,
-          purchaseDate: new Date(),
-          farmId: record.farmId,
-          isDeleted: false
-        });
+      if (oldRecord.farmId && oldRecord.date) {
+        await reconcileGreenGrassFeedInventory(oldRecord.farmId, oldRecord.date);
       }
 
       return successResponse(null, 'GrassCollection deleted successfully');

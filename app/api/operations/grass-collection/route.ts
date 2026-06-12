@@ -115,32 +115,107 @@ export async function POST(req: NextRequest) {
 
       const record = await GrassCollection.create(body);
 
-      // Automatically add/update FeedInventory for 'Green Grass'
-      const FeedInventory = mongoose.models.FeedInventory || mongoose.model('FeedInventory');
-      const latestFeed = await FeedInventory.findOne({
-        feedType: { $regex: /^green\s*grass$/i },
-        farmId: record.farmId,
-        isDeleted: false
-      }).sort({ createdAt: -1 });
-
-      const oldStock = latestFeed ? latestFeed.remainingStock : 0;
-      const bought = record.weight || 0;
-      const remainingStock = oldStock + bought;
-
-      await FeedInventory.create({
-        feedType: 'Green Grass',
-        oldStock,
-        bought,
-        usage: 0,
-        remainingStock,
-        purchaseDate: record.date || new Date(),
-        farmId: record.farmId,
-        isDeleted: false
-      });
+      // Automatically add/update FeedInventory for 'Green Grass' (unified daily entry)
+      if (record.farmId && record.date) {
+        await reconcileGreenGrassFeedInventory(record.farmId, record.date);
+      }
 
       return createdResponse(record, 'GrassCollection created successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);
     }
   });
+}
+
+/**
+ * Reconciles the Green Grass Feed Inventory for a farm on a given day to ensure
+ * there is only at most one consolidated FeedInventory entry for that day.
+ */
+export async function reconcileGreenGrassFeedInventory(farmId: mongoose.Types.ObjectId, date: Date) {
+  try {
+    const FeedInventory = mongoose.models.FeedInventory || mongoose.model('FeedInventory');
+    const GrassCollection = mongoose.models.GrassCollection || mongoose.model('GrassCollection');
+
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Sum all non-deleted grass collections for this farm on this day
+    const dailyCollections = await GrassCollection.find({
+      farmId,
+      isDeleted: false,
+      date: { $gte: startOfDay, $lte: endOfDay }
+    });
+
+    const totalWeight = dailyCollections.reduce((sum, gc) => sum + (gc.weight || 0), 0);
+
+    // Find if there is already a FeedInventory entry for 'Green Grass' on this day
+    let feedEntry = await FeedInventory.findOne({
+      feedType: { $regex: /^green\s*grass$/i },
+      farmId,
+      isDeleted: false,
+      purchaseDate: { $gte: startOfDay, $lte: endOfDay }
+    });
+
+    if (totalWeight === 0) {
+      if (feedEntry) {
+        feedEntry.isDeleted = true;
+        await feedEntry.save();
+      }
+    } else if (feedEntry) {
+      // Update existing feed entry
+      feedEntry.bought = totalWeight;
+      feedEntry.remainingStock = (feedEntry.oldStock || 0) + totalWeight - (feedEntry.usage || 0);
+      await feedEntry.save();
+    } else {
+      // Create new feed entry. Get oldStock from the latest previous record
+      const latestFeed = await FeedInventory.findOne({
+        feedType: { $regex: /^green\s*grass$/i },
+        farmId,
+        isDeleted: false,
+        purchaseDate: { $lt: startOfDay }
+      }).sort({ purchaseDate: -1, createdAt: -1 });
+
+      const oldStock = latestFeed ? latestFeed.remainingStock : 0;
+      const remainingStock = oldStock + totalWeight;
+
+      feedEntry = await FeedInventory.create({
+        feedType: 'Green Grass',
+        oldStock,
+        bought: totalWeight,
+        usage: 0,
+        remainingStock,
+        purchaseDate: startOfDay,
+        farmId,
+        isDeleted: false
+      });
+    }
+
+    // Cascade update subsequent FeedInventory entries for 'Green Grass' to keep remainingStock correct
+    let subsequentEntries = await FeedInventory.find({
+      feedType: { $regex: /^green\s*grass$/i },
+      farmId,
+      isDeleted: false,
+      purchaseDate: { $gt: endOfDay }
+    }).sort({ purchaseDate: 1, createdAt: 1 });
+
+    let currentRemaining = feedEntry && !feedEntry.isDeleted ? feedEntry.remainingStock : (
+      await FeedInventory.findOne({
+        feedType: { $regex: /^green\s*grass$/i },
+        farmId,
+        isDeleted: false,
+        purchaseDate: { $lt: startOfDay }
+      }).sort({ purchaseDate: -1, createdAt: -1 })
+    )?.remainingStock || 0;
+
+    for (const entry of subsequentEntries) {
+      entry.oldStock = currentRemaining;
+      entry.remainingStock = currentRemaining + (entry.bought || 0) - (entry.usage || 0);
+      await entry.save();
+      currentRemaining = entry.remainingStock;
+    }
+  } catch (error) {
+    console.error('[reconcileGreenGrassFeedInventory] Error:', error);
+  }
 }
