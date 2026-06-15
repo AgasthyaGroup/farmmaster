@@ -10,6 +10,7 @@ import '../models/User';
 import '../models/Role';
 import '../models/Logs'; // registers CrossingLog, SaleLog, and TreatmentLog
 import '../models/VaccinationLog';
+import '../models/Vaccine';
 import '../models/FeedInventory';
 import '../models/MedicineInventory';
 import '../models/Medicine';
