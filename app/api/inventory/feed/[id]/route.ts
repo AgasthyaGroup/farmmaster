@@ -26,10 +26,27 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       const { id } = await params;
       const body = await req.json();
       await dbConnect();
-      const record = await FeedInventory.findByIdAndUpdate(id, body, { new: true, runValidators: true });
-      if (!record || record.isDeleted) {
+
+      const existing = await FeedInventory.findById(id);
+      if (!existing || existing.isDeleted) {
         return errorResponse('FeedInventory not found', 404);
       }
+
+      // Merge and validate numeric bounds
+      const oldStock = body.oldStock !== undefined ? Number(body.oldStock) : existing.oldStock;
+      const bought = body.bought !== undefined ? Number(body.bought) : existing.bought;
+      const usage = body.usage !== undefined ? Number(body.usage) : existing.usage;
+
+      const totalAvailable = (isNaN(oldStock) ? 0 : oldStock) + (isNaN(bought) ? 0 : bought);
+      const usageVal = isNaN(usage) ? 0 : usage;
+
+      if (usageVal > totalAvailable) {
+        return errorResponse(`Usage (${usageVal}) cannot exceed total available stock (${totalAvailable} = Old Stock + Bought)`, 400);
+      }
+
+      body.remainingStock = totalAvailable - usageVal;
+
+      const record = await FeedInventory.findByIdAndUpdate(id, body, { new: true, runValidators: true });
       return successResponse(record, 'FeedInventory updated successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);

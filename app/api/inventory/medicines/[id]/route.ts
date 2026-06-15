@@ -26,10 +26,27 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       const { id } = await params;
       const body = await req.json();
       await dbConnect();
-      const record = await MedicineInventory.findByIdAndUpdate(id, body, { new: true, runValidators: true });
-      if (!record || record.isDeleted) {
+
+      const existing = await MedicineInventory.findById(id);
+      if (!existing || existing.isDeleted) {
         return errorResponse('MedicineInventory not found', 404);
       }
+
+      // Merge and validate numeric bounds
+      const oldStock = body.oldStock !== undefined ? Number(body.oldStock) : existing.oldStock;
+      const bought = body.bought !== undefined ? Number(body.bought) : existing.bought;
+      const used = body.used !== undefined ? Number(body.used) : existing.used;
+
+      const totalAvailable = (isNaN(oldStock) ? 0 : oldStock) + (isNaN(bought) ? 0 : bought);
+      const usedVal = isNaN(used) ? 0 : used;
+
+      if (usedVal > totalAvailable) {
+        return errorResponse(`Used quantity (${usedVal}) cannot exceed total available stock (${totalAvailable} = Old Stock + Bought)`, 400);
+      }
+
+      body.presentStock = totalAvailable - usedVal;
+
+      const record = await MedicineInventory.findByIdAndUpdate(id, body, { new: true, runValidators: true });
       return successResponse(record, 'MedicineInventory updated successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);

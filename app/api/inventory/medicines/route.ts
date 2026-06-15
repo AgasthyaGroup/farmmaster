@@ -29,6 +29,12 @@ export async function POST(req: NextRequest) {
         body[field] = isNaN(val) ? 0 : val;
       }
 
+      const totalAvailable = body.oldStock + body.bought;
+      if (body.used > totalAvailable) {
+        return errorResponse(`Used quantity (${body.used}) cannot exceed total available stock (${totalAvailable} = Old Stock + Bought)`, 400);
+      }
+      body.presentStock = totalAvailable - body.used;
+
       // Sanitize date fields dynamically to prevent DB crash
       const dateFields = ['purchaseDate', 'expiryDate'];
       for (const field of dateFields) {

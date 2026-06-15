@@ -158,8 +158,9 @@ export function mapLiveStockToCattle(
     }
   }
 
-  // Dynamic status check from CrossingLog
-  if (tagToStatus && tagToStatus.has(tag)) {
+  // Dynamic status check from CrossingLog (only if not SOLD, DECEASED, or DEAD)
+  const isInactive = ['SOLD', 'DECEASED', 'DEAD'].includes(String(doc.status).trim().toUpperCase());
+  if (!isInactive && tagToStatus && tagToStatus.has(tag)) {
     doc.status = tagToStatus.get(tag);
   } else {
     doc.status = doc.status || 'ACTIVE';
@@ -194,14 +195,16 @@ export async function GET(req: NextRequest) {
       
       // Fetch latest CrossingLog for status overrides
       const crossingLogs = await CrossingLog.find({ isDeleted: false })
-        .sort({ crossingDate: -1, createdAt: -1 })
+        .sort({ createdAt: -1 })
         .lean();
       
       const tagToStatus = new Map<string, string>();
       for (const log of crossingLogs) {
         const tag = String(log.tag_id || log.tag || '').trim().toUpperCase();
         if (tag && !tagToStatus.has(tag)) {
-          if (log.pregnancyStatus === 'Positive') {
+          if (log.actualCalvingDate) {
+            tagToStatus.set(tag, 'ACTIVE');
+          } else if (log.pregnancyStatus === 'Positive') {
             tagToStatus.set(tag, 'PREGNANT');
           } else if (log.pregnancyStatus === 'Pending') {
             tagToStatus.set(tag, 'PENDING');

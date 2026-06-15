@@ -60,17 +60,17 @@ export async function GET(
       // that older records may carry.
       const shedIds = sheds.map((s) => String(s._id));
 
-      // Primary match: farmId === this farm's ObjectId
-      const occupiedByFarmId = await LiveStock.countDocuments({
-        farmId: farmObjectId,
-        status: 'ACTIVE',
+      const occupied = await LiveStock.countDocuments({
         isDeleted: false,
+        status: { $nin: ['SOLD', 'DECEASED'] },
+        $or: [
+          { farmId: farmObjectId },
+          { farmId: String(farm._id) },
+          { farmId: farm.code },
+          { farmId: farm.name },
+          { shedId: { $in: shedIds } }
+        ]
       });
-
-      // Secondary match: animals whose shedId matches one of the shed _ids
-      // but farmId might be stored as a string code. De-dupe via union.
-      // We count the primary match and add orphaned shed-matched records.
-      const occupied = occupiedByFarmId;
 
       // ── 5. Per-shed breakdown ─────────────────────────────────────────────────
       // For each shed, count active animals whose shedId matches this shed's
@@ -80,12 +80,12 @@ export async function GET(
           const shedIdStr = String(shed._id);
           const shedOccupied = await LiveStock.countDocuments({
             isDeleted: false,
-            status: 'ACTIVE',
+            status: { $nin: ['SOLD', 'DECEASED'] },
             $or: [
               { shedId: shed._id },
               { shedId: shedIdStr },
-              { shed: shed.code },
-              { shed: shed.name },
+              { shedId: shed.code },
+              { shedId: shed.name },
             ],
           });
 

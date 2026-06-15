@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 
             const occupied = await LiveStock.countDocuments({
               farmId: farm._id,
-              status: 'ACTIVE',
+              status: { $nin: ['SOLD', 'DECEASED'] },
               isDeleted: false,
             });
 

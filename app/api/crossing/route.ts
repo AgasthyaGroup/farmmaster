@@ -296,6 +296,19 @@ export async function syncCalfRecord(crossingRecord: any, oldCalfTag?: string) {
           isPendingDetails: true,
           onboardingType: 'CALVING'
         });
+
+        // Increment the calving count for the mother animal in both tables
+        if (motherTag) {
+          await LiveStock.findOneAndUpdate(
+            { tag_id: motherTag },
+            { $inc: { calvings: 1 } }
+          );
+          await CattleModel.findOneAndUpdate(
+            { tag: motherTag },
+            { $inc: { calvings: 1 } }
+          );
+          console.log(`[syncCalfRecord] Incremented calving count for mother: ${motherTag}`);
+        }
       }
     }
   } catch (err) {

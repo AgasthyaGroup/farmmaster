@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       const [totalFarms, totalSheds, totalCattle, totalTags] = await Promise.all([
         user.role === 'SUPER_ADMIN' ? Farm.countDocuments({ isDeleted: false }) : Promise.resolve(1),
         Shed.countDocuments(filter),
-        Cattle.countDocuments(filter),
+        Cattle.countDocuments({ ...filter, status: { $nin: ['SOLD', 'DECEASED'] } }),
         Tag.countDocuments(filter),
       ]);
 
