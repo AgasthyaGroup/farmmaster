@@ -132,8 +132,8 @@ const CrossingLogSchema = new Schema<ICrossingLog>(
       type: String,
       trim: true,
       enum: {
-        values: ['normal', 'abortion', 'premature', 'calving', 'force termination', 'false pd', '', null],
-        message: 'calvingStatus must be one of: normal, abortion, premature, calving, force termination, false pd',
+        values: ['pending', 'normal', 'abortion', 'premature', 'calving', 'force termination', 'false pd', '', null],
+        message: 'calvingStatus must be one of: pending, normal, abortion, premature, calving, force termination, false pd',
       },
       default: null,
     },

@@ -83,6 +83,29 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         }
       });
 
+      // Validate stock for any increased feed consumption
+      const FeedInventory = mongoose.models.FeedInventory || mongoose.model('FeedInventory');
+      for (const [key, feedName] of Object.entries(FEEDING_MAPPING)) {
+        const oldQty = Number(oldRecord[key]) || 0;
+        const newQty = Number(body[key]) || 0;
+        const diff = newQty - oldQty;
+        if (diff > 0) {
+          const latestFeed = await FeedInventory.findOne({
+            feedType: { $regex: new RegExp(`^${feedName}$`, 'i') },
+            farmId: oldRecord.farmId,
+            isDeleted: false
+          }).sort({ createdAt: -1 });
+
+          const available = latestFeed ? latestFeed.remainingStock : 0;
+          if (available < diff) {
+            return errorResponse(
+              `Insufficient stock for ${feedName}. Available: ${available} units, requested increase: ${diff} units.`,
+              400
+            );
+          }
+        }
+      }
+
       const record = await DailyFeeding.findByIdAndUpdate(id, body, { new: true, runValidators: true });
       if (!record) {
         return errorResponse('DailyFeeding not found', 404);

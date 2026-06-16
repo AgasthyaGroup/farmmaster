@@ -111,9 +111,7 @@ export async function POST(req: NextRequest) {
         }
       });
 
-      const record = await DailyFeeding.create(body);
-
-      // Deduct inventory for all consumed feeds
+      // Check stock availability
       const mapping = {
         greenGrass: 'Green Grass',
         dryGrass: 'Dry Grass',
@@ -125,6 +123,31 @@ export async function POST(req: NextRequest) {
         oralCalcium: 'Oral Calcium',
         mineralMixture: 'Mineral Mixture'
       };
+
+      const FeedInventory = mongoose.models.FeedInventory || mongoose.model('FeedInventory');
+      for (const [key, feedName] of Object.entries(mapping)) {
+        const qty = Number(body[key]) || 0;
+        if (qty > 0) {
+          const latestFeed = await FeedInventory.findOne({
+            feedType: { $regex: new RegExp(`^${feedName}$`, 'i') },
+            farmId: body.farmId,
+            isDeleted: false
+          }).sort({ createdAt: -1 });
+
+          const available = latestFeed ? latestFeed.remainingStock : 0;
+          if (available < qty) {
+            return errorResponse(
+              `Insufficient stock for ${feedName}. Available: ${available} units, requested: ${qty} units.`,
+              400
+            );
+          }
+        }
+      }
+
+      const record = await DailyFeeding.create(body);
+
+      // Deduct inventory for all consumed feeds
+
 
       for (const [key, feedName] of Object.entries(mapping)) {
         const qty = Number(record[key]) || 0;

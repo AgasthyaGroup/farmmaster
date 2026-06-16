@@ -219,12 +219,18 @@ export async function GET(req: NextRequest) {
         .sort({ date: -1, createdAt: -1 })
         .lean();
 
-      // First find the latest date per animal
+      // First find the latest date per animal that is strictly before today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
       const tagToLatestDate = new Map<string, string>();
       for (const col of milkCollections) {
         const tag = String(col.tag_id || col.tagId || '').trim().toUpperCase();
-        if (tag && col.date && !tagToLatestDate.has(tag)) {
-          tagToLatestDate.set(tag, new Date(col.date).toDateString());
+        if (tag && col.date) {
+          const colDate = new Date(col.date);
+          if (colDate < today && !tagToLatestDate.has(tag)) {
+            tagToLatestDate.set(tag, colDate.toDateString());
+          }
         }
       }
 
