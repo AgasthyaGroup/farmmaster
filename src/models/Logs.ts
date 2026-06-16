@@ -85,6 +85,7 @@ export interface ICrossingLog extends Document {
   estimatedCalvingDate?: Date;
   pregnantAge?: string;
   actualCalvingDate?: Date;
+  calvingStatus?: string;
   calfTag?: string;
   breedType?: string;
   heatMonitoring1stNotification?: Date;
@@ -127,6 +128,15 @@ const CrossingLogSchema = new Schema<ICrossingLog>(
     estimatedCalvingDate: { type: Date, default: null, set: safeDateParse },
     pregnantAge: { type: String, trim: true, default: null },
     actualCalvingDate: { type: Date, default: null, set: safeDateParse },
+    calvingStatus: {
+      type: String,
+      trim: true,
+      enum: {
+        values: ['normal', 'abortion', 'premature', 'calving', 'force termination', 'false pd', '', null],
+        message: 'calvingStatus must be one of: normal, abortion, premature, calving, force termination, false pd',
+      },
+      default: null,
+    },
     calfTag: { type: String, trim: true, default: null },
     breedType: { type: String, trim: true, default: null },
     heatMonitoring1stNotification: { type: Date, default: null, set: safeDateParse },
