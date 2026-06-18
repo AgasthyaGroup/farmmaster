@@ -5,6 +5,7 @@ import '../models/Farm';
 import '../models/Shed';
 import '../models/Cattle';
 import '../models/LiveStock';
+import '../models/Animal';
 import '../models/Tag';
 import '../models/User';
 import '../models/Role';
