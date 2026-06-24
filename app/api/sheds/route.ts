@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       if (!parsedBody.success) {
         return errorResponse(parsedBody.error.issues[0]?.message || 'Invalid request body', 400);
       }
-      const { farmId, name, code, lines, capacity, remarks } = parsedBody.data;
+      const { farmId, name, code, lines, capacity, remarks, lineManagement, milking } = parsedBody.data;
 
       await dbConnect();
 
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
         // Revive the soft-deleted shed
         shed = await Shed.findByIdAndUpdate(
           existingShed._id,
-          { name, lines, capacity, remarks, isDeleted: false },
+          { name, lines, capacity, remarks, lineManagement, milking, isDeleted: false },
           { new: true }
         );
       } else {
@@ -50,6 +50,8 @@ export async function POST(req: NextRequest) {
           lines,
           capacity,
           remarks,
+          lineManagement,
+          milking,
         });
       }
 

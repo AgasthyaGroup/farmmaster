@@ -9,6 +9,7 @@ export interface ICattle extends Document {
   cattleType: string;
   shed: string;
   lineNo?: number;
+  position?: number;
   status: string;
   isDeleted: boolean;
   breed?: string;
@@ -39,7 +40,7 @@ const CattleSchema = new Schema<ICattle>(
   {
     // Loose reference field to support legacy string codes or raw hex ObjectIds gracefully
     farmId: { type: Schema.Types.Mixed, ref: 'Farm', index: true, default: null },
-    
+
     name: { type: String, trim: true, default: '' },
     code: { type: String, trim: true, default: '' },
     date: { type: Date, default: null },
@@ -47,6 +48,7 @@ const CattleSchema = new Schema<ICattle>(
     cattleType: { type: String, required: [true, 'Cattle Type is required'], trim: true, uppercase: true },
     shed: { type: String, required: [true, 'Shed Number/Name is required'], trim: true },
     lineNo: { type: Number, default: 0 },
+    position: { type: Number, default: 0 },
     status: { type: String, default: 'ACTIVE', trim: true, uppercase: true },
     isDeleted: { type: Boolean, default: false, index: true },
     breed: { type: String, trim: true, default: '' },

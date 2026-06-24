@@ -1,4 +1,7 @@
+import dns from 'dns';
+dns.setServers(['8.8.8.8']);
 import type { NextConfig } from "next";
+
 
 const nextConfig: NextConfig = {
   async headers() {

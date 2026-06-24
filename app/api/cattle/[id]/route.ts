@@ -34,6 +34,10 @@ export async function PUT(
         return errorResponse('Livestock record not found in registry', 404);
       }
 
+      // Prevent Mongoose/MongoDB from trying to update immutable _id/id fields
+      delete body._id;
+      delete body.id;
+
       // 1. Update in the primary LiveStock collection
       const updatedLiveStock = await LiveStock.findByIdAndUpdate(record._id, body, {
         new: true,

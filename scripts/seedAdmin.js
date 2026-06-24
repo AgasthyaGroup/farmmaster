@@ -1,5 +1,7 @@
+require('dns').setServers(['8.8.8.8']);
 require('dotenv').config();
 const mongoose = require('mongoose');
+
 const bcrypt = require('bcryptjs');
 
 // Since we're running from node, we might need a simplified model or direct mongo

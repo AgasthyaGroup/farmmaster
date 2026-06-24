@@ -35,6 +35,8 @@ export const createShedSchema = z.object({
   code: z.string().min(1, 'Code is required'),
   lines: z.number().int().nonnegative().optional(),
   capacity: z.number().int().nonnegative().optional(),
+  lineManagement: z.enum(['Yes', 'No']).optional(),
+  milking: z.enum(['Yes', 'No']).optional(),
   remarks: z.string().optional(),
 });
 

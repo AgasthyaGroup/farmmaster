@@ -32,6 +32,8 @@ export interface ILiveStock extends Document {
   isPendingDetails?: boolean;
   onboardingType?: string;
   isDeleted: boolean;
+  lineNo?: number;
+  position?: number;
 }
 
 const LiveStockSchema = new Schema<ILiveStock>(
@@ -52,11 +54,13 @@ const LiveStockSchema = new Schema<ILiveStock>(
     },
     breed: { type: String, trim: true, default: '' },
     age: { type: String, trim: true, default: '' },
-    
+
     // Loose Mixed reference fields to gracefully handle both ObjectIds and legacy string/name formats
     shedId: { type: Schema.Types.Mixed, index: true, default: null },
     farmId: { type: Schema.Types.Mixed, index: true, default: null },
-    
+    lineNo: { type: Number, default: 0 },
+    position: { type: Number, default: 0 },
+
     status: {
       type: String,
       required: true,

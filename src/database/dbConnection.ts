@@ -1,7 +1,10 @@
+import dns from 'dns';
+dns.setServers(['8.8.8.8']);
 import mongoose from 'mongoose';
 
 // ─── Pre-register all models to resolve Mongoose lazy-loading race conditions ───
 import '../models/Farm';
+
 import '../models/Shed';
 import '../models/Cattle';
 import '../models/LiveStock';
@@ -48,10 +51,18 @@ async function dbConnect() {
       bufferCommands: false,
     };
 
+    try {
+      dns.setServers(['8.8.8.8']);
+      console.log('Dynamically set DNS servers to [8.8.8.8] in dbConnect worker thread.');
+    } catch (err) {
+      console.error('Non-blocking error setting DNS servers:', err);
+    }
+
     cached.promise = mongoose.connect(mongodbUri, opts).then((mongoose) => {
       return mongoose;
     });
   }
+
 
   try {
     cached.conn = await cached.promise;

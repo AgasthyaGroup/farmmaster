@@ -44,7 +44,7 @@ export function deepSanitizeCattleInput(body: any, userFarmId?: string | null) {
   }
 
   // 2. Defuse strict Mongoose Number casting crashes
-  const numberFields = ['calvings', 'production', 'milkCollection', 'weight', 'purchasePrice', 'lineNo'];
+  const numberFields = ['calvings', 'production', 'milkCollection', 'weight', 'purchasePrice', 'lineNo', 'position'];
   for (const field of numberFields) {
     const rawVal = body[field];
     if (
@@ -99,7 +99,15 @@ export function deepSanitizeCattleInput(body: any, userFarmId?: string | null) {
   body.animalType = typeVal;
 
   // Normalize Shed Number / Shed ID
-  const shedVal = body.shed || body.shedId || '-';
+  let shedVal = String(body.shed || body.shedId || '').trim();
+  if (shedVal && shedVal !== '-') {
+    const match = shedVal.match(/\d+/);
+    if (match) {
+      shedVal = match[0];
+    }
+  } else if (!shedVal) {
+    shedVal = '-';
+  }
   body.shed = shedVal;
   body.shedId = shedVal;
 
@@ -188,16 +196,16 @@ export async function GET(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'CATTLE'], async () => {
     try {
       await dbConnect();
-      
+
       // Fetch all farms to map ObjectId -> Farm Name
       const farms = await Farm.find({ isDeleted: false }).lean();
       const farmMap = new Map(farms.map(f => [f._id.toString(), f.name]));
-      
+
       // Fetch latest CrossingLog for status overrides
       const crossingLogs = await CrossingLog.find({ isDeleted: false })
         .sort({ createdAt: -1 })
         .lean();
-      
+
       const tagToStatus = new Map<string, string>();
       for (const log of crossingLogs) {
         const tag = String(log.tag_id || log.tag || '').trim().toUpperCase();
@@ -308,7 +316,7 @@ export async function POST(req: NextRequest) {
 
       // Create entries in BOTH collections simultaneously to ensure database relationships are fully unified
       const liveStockRecord = await LiveStock.create(body);
-      
+
       try {
         await Cattle.create({
           ...body,
