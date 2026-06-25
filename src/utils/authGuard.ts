@@ -44,16 +44,69 @@ export async function authenticate(req: NextRequest): Promise<TokenPayload | nul
   return payload;
 }
 
-export function authorize(user: TokenPayload, allowedRolesOrPermissions: string[]) {
+const BASE_TOKEN_MAP: Record<string, string[]> = {
+  CATTLE: ['CATTLE_MANAGEMENT', 'TAG_MANAGEMENT', 'BREED_MANAGEMENT', 'ANIMAL_MANAGEMENT', 'LIVESTOCK'],
+  HEALTH: ['HEALTH_MANAGEMENT', 'HEALTH'],
+  INVENTORY: ['FEED_ITEMS', 'INVENTORY'],
+  MILK: ['MILK'],
+  MILK_PRODUCTION: ['MILK'],
+  USERS: ['USER_MANAGEMENT'],
+  DEPARTMENTS: ['DEPARTMENT'],
+  FARMS: ['FARM_MANAGEMENT'],
+  SHEDS: ['SHED_MANAGEMENT'],
+  SHED_LOG: ['SHED_LOG'],
+  CROSSING_LOG: ['CROSSING_LOG'],
+  PURCHASE_LOG: ['PURCHASE_LOG'],
+  SALE_LOG: ['SALE_LOG'],
+  GRASS: ['GRASS', 'GRASS_COLLECTION'],
+  FEEDING: ['FEEDING'],
+};
+
+export function authorize(user: TokenPayload, allowedRolesOrPermissions: string[], method: string = 'GET') {
   // Always grant access to roles that have the 'ALL' permission
   if (user.permissions?.includes('ALL')) {
     return true;
   }
 
+  // Determine required action suffix based on request method
+  let suffix = 'VIEW';
+  const upperMethod = method.toUpperCase();
+  if (upperMethod === 'POST') {
+    suffix = 'CREATE';
+  } else if (upperMethod === 'PUT' || upperMethod === 'PATCH') {
+    suffix = 'EDIT';
+  } else if (upperMethod === 'DELETE') {
+    suffix = 'DELETE';
+  }
+
   // Check if user's role OR any of their permissions match the required list
-  return allowedRolesOrPermissions.some(req => 
-    user.role === req || user.permissions?.includes(req)
-  );
+  return allowedRolesOrPermissions.some(req => {
+    // 1. Direct match (e.g. user.role === req or user.permissions has req)
+    // We strictly ignore role name match for FARM_ADMIN and INCHARGE to enforce their customized permissions!
+    if (user.role === req && req.toUpperCase() !== 'FARM_ADMIN' && req.toUpperCase() !== 'INCHARGE') {
+      return true;
+    }
+
+    if (user.permissions?.includes(req)) {
+      return true;
+    }
+
+    // 2. Granular sub-module match
+    // If the required permission is a baseToken (like CATTLE), and the user has any of its sub-module permissions (like LIVESTOCK_VIEW)
+    const reqUpper = req.toUpperCase();
+    let subPrefixes = BASE_TOKEN_MAP[reqUpper];
+    if (!subPrefixes) {
+      subPrefixes = [reqUpper];
+    }
+
+    return subPrefixes.some(prefix => 
+      user.permissions?.some(p => {
+        const upperP = String(p).trim().toUpperCase();
+        const requiredActionToken = `${prefix}_${suffix}`;
+        return upperP === requiredActionToken || upperP === prefix || upperP.startsWith(prefix + '_');
+      })
+    );
+  });
 }
 
 // Higher-order helper to wrap handlers
@@ -67,7 +120,7 @@ export async function withAuth(
     return unauthorizedResponse('Invalid or expired token');
   }
 
-  if (!authorize(user, allowedRolesOrPermissions)) {
+  if (!authorize(user, allowedRolesOrPermissions, req.method)) {
     return forbiddenResponse('You do not have permission for this action');
   }
 
