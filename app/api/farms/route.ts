@@ -4,17 +4,23 @@ import Farm from '@/src/models/Farm';
 import Shed from '@/src/models/Shed';
 import LiveStock from '@/src/models/LiveStock';
 import { withAuth } from '@/src/utils/authGuard';
-import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
+import { successResponse, errorResponse, createdResponse, forbiddenResponse } from '@/src/utils/responses';
 import { createFarmSchema } from '@/src/utils/validation';
 
 export async function GET(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'FARMS'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'FARMS'], async (user) => {
     try {
       await dbConnect();
       const { searchParams } = new URL(req.url);
       const embedCapacity = searchParams.get('capacity') === 'true';
 
-      const farms = await Farm.find({ isDeleted: false }).sort({ createdAt: -1 }).lean();
+      const query: any = { isDeleted: false };
+      const userRole = String(user.role).toUpperCase();
+      if (userRole !== 'SUPER_ADMIN' && user.farmId) {
+        query._id = user.farmId;
+      }
+
+      const farms = await Farm.find(query).sort({ createdAt: -1 }).lean();
 
       if (embedCapacity) {
         const enhancedFarms = await Promise.all(
@@ -52,9 +58,14 @@ export async function GET(req: NextRequest) {
   });
 }
 
+
 export async function POST(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'FARMS'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'FARMS'], async (user) => {
     try {
+      const userRole = String(user.role).toUpperCase();
+      if (userRole !== 'SUPER_ADMIN') {
+        return forbiddenResponse('Only super administrators can create new farms');
+      }
       const parsedBody = createFarmSchema.safeParse(await req.json());
       if (!parsedBody.success) {
         return errorResponse(parsedBody.error.issues[0]?.message || 'Invalid request body', 400);

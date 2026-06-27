@@ -2,16 +2,20 @@ import { NextRequest } from 'next/server';
 import dbConnect from '@/src/database/dbConnection';
 import Farm from '@/src/models/Farm';
 import { withAuth } from '@/src/utils/authGuard';
-import { successResponse, errorResponse, notFoundResponse } from '@/src/utils/responses';
+import { successResponse, errorResponse, notFoundResponse, forbiddenResponse } from '@/src/utils/responses';
 import { objectIdSchema, updateFarmSchema } from '@/src/utils/validation';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'FARMS'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'FARMS'], async (user) => {
     try {
       const { id } = await params;
       const parsedId = objectIdSchema.safeParse(id);
       if (!parsedId.success) {
         return errorResponse('Invalid farm id', 400);
+      }
+      const userRole = String(user.role).toUpperCase();
+      if (userRole !== 'SUPER_ADMIN' && user.farmId && String(parsedId.data) !== String(user.farmId)) {
+        return forbiddenResponse('You do not have access to this farm');
       }
       await dbConnect();
       const farm = await Farm.findOne({ _id: parsedId.data, isDeleted: false });
@@ -24,12 +28,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'FARMS'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'FARMS'], async (user) => {
     try {
       const { id } = await params;
       const parsedId = objectIdSchema.safeParse(id);
       if (!parsedId.success) {
         return errorResponse('Invalid farm id', 400);
+      }
+      const userRole = String(user.role).toUpperCase();
+      if (userRole !== 'SUPER_ADMIN' && user.farmId && String(parsedId.data) !== String(user.farmId)) {
+        return forbiddenResponse('You do not have access to this farm');
       }
       const parsedBody = updateFarmSchema.safeParse(await req.json());
       if (!parsedBody.success) {
@@ -52,12 +60,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'FARMS'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'FARMS'], async (user) => {
     try {
       const { id } = await params;
       const parsedId = objectIdSchema.safeParse(id);
       if (!parsedId.success) {
         return errorResponse('Invalid farm id', 400);
+      }
+      const userRole = String(user.role).toUpperCase();
+      if (userRole !== 'SUPER_ADMIN') {
+        return forbiddenResponse('Only super administrators can delete farms');
       }
       await dbConnect();
       
