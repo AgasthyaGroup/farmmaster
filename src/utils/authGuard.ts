@@ -77,7 +77,9 @@ export function authorize(user: TokenPayload, allowedRolesOrPermissions: string[
       pathname.startsWith('/api/cattle') || 
       pathname.startsWith('/api/breeds') || 
       pathname.startsWith('/api/feed-items') || 
-      pathname.startsWith('/api/medicines');
+      pathname.startsWith('/api/medicines') ||
+      pathname.startsWith('/api/animals') ||
+      pathname.startsWith('/api/tags');
     if (isLookupPath) {
       return true;
     }
