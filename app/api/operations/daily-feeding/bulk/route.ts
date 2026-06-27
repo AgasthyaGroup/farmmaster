@@ -3,7 +3,7 @@ import dbConnect from '@/src/database/dbConnection';
 import DailyFeeding from '@/src/models/DailyFeeding';
 import FeedItem from '@/src/models/FeedItem';
 import { withAuth } from '@/src/utils/authGuard';
-import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
+import { successResponse, errorResponse } from '@/src/utils/responses';
 import { resolveTagString } from '@/src/models/Logs';
 import mongoose from 'mongoose';
 
@@ -26,18 +26,6 @@ function getFeedFieldKey(name: string) {
     .split(/\s+/)
     .map((word, idx) => idx === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join('');
-}
-
-export async function GET(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'INVENTORY', 'FEEDING'], async () => {
-    try {
-      await dbConnect();
-      const records = await DailyFeeding.find({ isDeleted: false }).sort({ createdAt: -1 });
-      return successResponse(records, 'DailyFeeding fetched successfully');
-    } catch (error: any) {
-      return errorResponse(error.message, 500);
-    }
-  });
 }
 
 async function deductFeedInventory(feedName: string, quantity: number, farmId: any, date: Date) {
@@ -70,50 +58,25 @@ export async function POST(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'INVENTORY', 'FEEDING'], async () => {
     try {
       const body = await req.json();
+      const { date, session, farmId, shedId, collections } = body;
+
+      if (!collections || !Array.isArray(collections)) {
+        return errorResponse('Collections array is required', 400);
+      }
+
       await dbConnect();
-
-      // Normalize fields to tag_id / animalId
-      if (!body.tag_id) {
-        body.tag_id = String(body.animalId || body.tagId || body.tag || '').trim();
-      }
-      if (!body.animalId) {
-        body.animalId = body.tag_id;
-      }
-
-      if (!body.tag_id) {
-        return errorResponse('animalId (animal tag) is required for daily feeding logs', 400);
-      }
-
-      // Resolve dynamic ObjectId to human-readable tag string if submitted by frontend selector
-      body.tag_id = await resolveTagString(body.tag_id);
-      body.animalId = body.tag_id;
-
-      // ── Validation Interceptor Check ──────────────────────────────────────
-      const cleanTag = String(body.tag_id).trim().toUpperCase();
       const LiveStock = mongoose.models.LiveStock || mongoose.model('LiveStock');
-      const isRowLog = cleanTag.startsWith('ROW ');
-      const animalExists = isRowLog ? true : await LiveStock.findOne({ tag_id: cleanTag, isDeleted: false });
-      if (!animalExists) {
-        return errorResponse(
-          'Data Validation Error: Cannot log transaction. The targeted Tag ID does not exist in the Live Stock registry.',
-          400
-        );
+      const savedRecords = [];
+
+      const baseDate = new Date(date);
+      if (isNaN(baseDate.getTime())) {
+        return errorResponse('Invalid date provided', 400);
       }
 
-      // Safe date fallback to prevent DB validation crash
-      if (body.date) {
-        const parsedDate = new Date(body.date);
-        if (isNaN(parsedDate.getTime())) {
-          body.date = new Date();
-        } else {
-          body.date = parsedDate;
-        }
-      } else {
-        body.date = new Date();
-      }
-
-      // Fetch active feed items to build dynamic validation/deduction mapping
+      // Fetch all active feed items globally
       const activeFeedItems = await FeedItem.find({ isDeleted: false });
+      
+      // Build dynamic mapping: key -> name
       const mapping: Record<string, string> = {};
       activeFeedItems.forEach(item => {
         const key = getFeedFieldKey(item.name);
@@ -122,49 +85,101 @@ export async function POST(req: NextRequest) {
 
       const feedFields = Object.keys(mapping);
 
-      // Sanitize feeding attributes to numeric default 0
-      feedFields.forEach(f => {
-        if (body[f] === "" || body[f] === undefined || body[f] === null) {
-          body[f] = 0;
-        } else {
-          const val = Number(body[f]);
-          body[f] = isNaN(val) ? 0 : val;
-        }
-      });
+      // 1. First Pass: Validate animals and sum feed consumption for stock checks
+      const feedTotals: Record<string, number> = {};
+      feedFields.forEach(f => { feedTotals[f] = 0; });
 
-      // Check stock availability
+      const verifiedAnimals = [];
+
+      for (const item of collections) {
+        let tagId = item.tag_id || item.tagId || item.tag || '';
+        if (!tagId) continue;
+
+        const cleanTag = String(tagId).trim().toUpperCase();
+        const resolvedTag = await resolveTagString(cleanTag);
+        
+        const isRowLog = resolvedTag.startsWith('ROW ');
+        const animalExists = isRowLog ? true : await LiveStock.findOne({ tag_id: resolvedTag, isDeleted: false });
+        
+        if (!animalExists) {
+          return errorResponse(
+            `Data Validation Error: Cannot log transaction. The targeted Tag ID "${resolvedTag}" does not exist in the Live Stock registry.`,
+            400
+          );
+        }
+
+        // Sanitize numbers
+        const sanitizedItem: Record<string, any> = { tag_id: resolvedTag, animalId: resolvedTag };
+        feedFields.forEach(f => {
+          let val = 0;
+          if (item[f] !== "" && item[f] !== undefined && item[f] !== null) {
+            const num = Number(item[f]);
+            val = isNaN(num) ? 0 : num;
+          }
+          sanitizedItem[f] = val;
+          feedTotals[f] += val;
+        });
+
+        verifiedAnimals.push(sanitizedItem);
+      }
+
+      // 2. Stock Checks
       const FeedInventory = mongoose.models.FeedInventory || mongoose.model('FeedInventory');
       for (const [key, feedName] of Object.entries(mapping)) {
-        const qty = Number(body[key]) || 0;
-        if (qty > 0) {
+        const totalNeeded = feedTotals[key];
+        if (totalNeeded > 0) {
           const latestFeed = await FeedInventory.findOne({
             feedType: { $regex: new RegExp(`^${feedName}$`, 'i') },
-            farmId: body.farmId,
+            farmId,
             isDeleted: false
           }).sort({ createdAt: -1 });
 
           const available = latestFeed ? latestFeed.remainingStock : 0;
-          if (available < qty) {
+          if (available < totalNeeded) {
             return errorResponse(
-              `Insufficient stock for ${feedName}. Available: ${available} units, requested: ${qty} units.`,
+              `Insufficient stock for ${feedName}. Available: ${available} units, requested for this shed: ${totalNeeded} units.`,
               400
             );
           }
         }
       }
 
-      const record = await DailyFeeding.create(body);
+      // 3. Second Pass: Upsert records and deduct inventory
+      for (const animalData of verifiedAnimals) {
+        // Upsert entry for this animal, date, session
+        const filter = {
+          tag_id: animalData.tag_id,
+          date: baseDate,
+          session,
+          shedId,
+          farmId,
+        };
 
-      // Deduct inventory for all consumed feeds
+        const update = {
+          ...animalData,
+          session,
+          isDeleted: false,
+        };
+
+        const doc = await DailyFeeding.findOneAndUpdate(filter, update, {
+          upsert: true,
+          new: true,
+          setDefaultsOnInsert: true
+        });
+        savedRecords.push(doc);
+      }
+
+      // Deduct inventory
       for (const [key, feedName] of Object.entries(mapping)) {
-        const qty = Number(record[key]) || 0;
-        if (qty > 0) {
-          await deductFeedInventory(feedName, qty, record.farmId, record.date);
+        const totalNeeded = feedTotals[key];
+        if (totalNeeded > 0) {
+          await deductFeedInventory(feedName, totalNeeded, farmId, baseDate);
         }
       }
 
-      return createdResponse(record, 'DailyFeeding created successfully');
+      return successResponse(savedRecords, 'Bulk daily feeding recorded successfully');
     } catch (error: any) {
+      console.error('[POST /api/operations/daily-feeding/bulk] Error:', error);
       return errorResponse(error.message, 500);
     }
   });

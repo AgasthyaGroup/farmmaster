@@ -15,13 +15,35 @@ function getLogModel(type: string): any {
   return null;
 }
 
+function getRequiredPermissionsForType(type: string): string[] {
+  const normalized = String(type).trim().toLowerCase();
+  const base = ['SUPER_ADMIN', 'FARM_ADMIN'];
+  if (normalized === 'crossing') {
+    return [...base, 'CROSSING_LOG', 'CROSSING'];
+  }
+  if (normalized === 'sale') {
+    return [...base, 'SALE_LOG', 'SALE'];
+  }
+  if (normalized === 'shed') {
+    return [...base, 'SHED_LOG', 'SHED'];
+  }
+  if (normalized === 'purchase') {
+    return [...base, 'PURCHASE_LOG', 'PURCHASE'];
+  }
+  if (normalized === 'treatment') {
+    return [...base, 'HEALTH', 'HEALTH_MANAGEMENT'];
+  }
+  return [...base, 'INCHARGE', 'HEALTH'];
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ type: string; id: string }> }
 ) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'HEALTH'], async () => {
+  const { type, id } = await params;
+  const permissions = getRequiredPermissionsForType(type);
+  return withAuth(req, permissions, async () => {
     try {
-      const { type, id } = await params;
       const LogModel = getLogModel(type);
       if (!LogModel) return errorResponse(`Invalid log type: ${type}`, 400);
 
@@ -41,9 +63,10 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ type: string; id: string }> }
 ) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'HEALTH'], async () => {
+  const { type, id } = await params;
+  const permissions = getRequiredPermissionsForType(type);
+  return withAuth(req, permissions, async () => {
     try {
-      const { type, id } = await params;
       const LogModel = getLogModel(type);
       if (!LogModel) return errorResponse(`Invalid log type: ${type}`, 400);
 
@@ -224,9 +247,10 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ type: string; id: string }> }
 ) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'HEALTH'], async () => {
+  const { type, id } = await params;
+  const permissions = getRequiredPermissionsForType(type);
+  return withAuth(req, permissions, async () => {
     try {
-      const { type, id } = await params;
       const LogModel = getLogModel(type);
       if (!LogModel) return errorResponse(`Invalid log type: ${type}`, 400);
 

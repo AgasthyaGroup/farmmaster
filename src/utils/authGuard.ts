@@ -21,12 +21,12 @@ export async function authenticate(req: NextRequest): Promise<TokenPayload | nul
   // Ensure user exists and is still active in the database
   try {
     await dbConnect();
-    const user = await User.findById(payload.userId).select('status role').lean();
+    const user = await User.findById(payload.userId).select('status role farmId').lean();
     if (!user || user.status === false) {
       return null;
     }
     
-    // Refresh permissions on every request for immediate revocation/granting
+    // Refresh permissions and farmId on every request for immediate revocation/granting
     const roleDoc = await Role.findOne({ name: String(user.role).toUpperCase() }).lean();
     let permissions = roleDoc?.permissions || [];
     
@@ -36,6 +36,7 @@ export async function authenticate(req: NextRequest): Promise<TokenPayload | nul
     }
     
     payload.permissions = permissions;
+    payload.farmId = user.farmId ? user.farmId.toString() : null;
   } catch (error) {
     console.error("Auth DB Check Error:", error);
     return null;

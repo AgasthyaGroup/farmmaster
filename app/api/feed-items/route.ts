@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
     try {
       const body = await req.json();
       const name = body?.name?.trim();
+      const type = body?.type?.trim() || '';
       const description = body?.description?.trim() || '';
       const status = body?.status !== undefined ? body.status : true;
       const farmId = body?.farmId || null;
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
         // If deleted, restore and update
         const item = await FeedItem.findByIdAndUpdate(
           existingItem._id,
-          { description, status, farmId, isDeleted: false },
+          { description, status, farmId, type, isDeleted: false },
           { new: true }
         );
         return createdResponse(item, 'Feed item created successfully');
@@ -50,6 +51,7 @@ export async function POST(req: NextRequest) {
         description,
         status,
         farmId,
+        type,
       });
 
       return createdResponse(item, 'Feed item created successfully');

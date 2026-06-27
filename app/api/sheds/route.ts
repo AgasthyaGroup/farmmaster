@@ -6,10 +6,14 @@ import { successResponse, errorResponse, createdResponse } from '@/src/utils/res
 import { createShedSchema } from '@/src/utils/validation';
 
 export async function GET(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'SHEDS'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'SHEDS'], async (user) => {
     try {
       await dbConnect();
-      const sheds = await Shed.find({ isDeleted: false }).populate('farmId').sort({ createdAt: -1 });
+      const query: any = { isDeleted: false };
+      if (user.farmId) {
+        query.farmId = user.farmId;
+      }
+      const sheds = await Shed.find(query).populate('farmId').sort({ createdAt: -1 });
       return successResponse(sheds, 'Sheds fetched successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);

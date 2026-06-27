@@ -15,6 +15,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
       const body = await req.json();
       const name = body?.name?.trim();
+      const type = body?.type?.trim() || '';
       const description = body?.description?.trim() || '';
       const status = body?.status !== undefined ? body.status : true;
       const farmId = body?.farmId || null;
@@ -32,7 +33,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
       const item = await FeedItem.findByIdAndUpdate(
         id,
-        { name, description, status, farmId },
+        { name, description, status, farmId, type },
         { new: true }
       );
       if (!item) return notFoundResponse('Feed item not found');

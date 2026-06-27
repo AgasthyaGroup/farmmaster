@@ -7,17 +7,39 @@ import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
 import mongoose from 'mongoose';
 
+function getRequiredPermissionsForType(type: string): string[] {
+  const normalized = String(type).trim().toLowerCase();
+  const base = ['SUPER_ADMIN', 'FARM_ADMIN'];
+  if (normalized === 'crossing') {
+    return [...base, 'CROSSING_LOG', 'CROSSING'];
+  }
+  if (normalized === 'sale') {
+    return [...base, 'SALE_LOG', 'SALE'];
+  }
+  if (normalized === 'shed') {
+    return [...base, 'SHED_LOG', 'SHED'];
+  }
+  if (normalized === 'purchase') {
+    return [...base, 'PURCHASE_LOG', 'PURCHASE'];
+  }
+  if (normalized === 'treatment') {
+    return [...base, 'HEALTH', 'HEALTH_MANAGEMENT'];
+  }
+  return [...base, 'INCHARGE', 'HEALTH'];
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ type: string }> }
 ) {
+  const { type } = await params;
+  const permissions = getRequiredPermissionsForType(type);
   return withAuth(
     req,
-    ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'HEALTH'],
+    permissions,
     async (user) => {
       let body: any = null;
       try {
-        const { type } = await params;
         const normalizedType = String(type).trim().toLowerCase();
 
         // 1. Determine target log model
@@ -234,12 +256,13 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ type: string }> }
 ) {
+  const { type } = await params;
+  const permissions = getRequiredPermissionsForType(type);
   return withAuth(
     req,
-    ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'HEALTH'],
+    permissions,
     async () => {
       try {
-        const { type } = await params;
         const normalizedType = String(type).trim().toLowerCase();
 
         let LogModel: any;
