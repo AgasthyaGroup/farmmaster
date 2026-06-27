@@ -63,10 +63,24 @@ const BASE_TOKEN_MAP: Record<string, string[]> = {
   FEEDING: ['FEEDING'],
 };
 
-export function authorize(user: TokenPayload, allowedRolesOrPermissions: string[], method: string = 'GET') {
+export function authorize(user: TokenPayload, allowedRolesOrPermissions: string[], method: string = 'GET', pathname?: string) {
   // Always grant access to roles that have the 'ALL' permission
   if (user.permissions?.includes('ALL')) {
     return true;
+  }
+
+  // Allow read-only (GET) requests for essential lookup tables to all authenticated users
+  if (method.toUpperCase() === 'GET' && pathname) {
+    const isLookupPath = 
+      pathname.startsWith('/api/farms') || 
+      pathname.startsWith('/api/sheds') || 
+      pathname.startsWith('/api/cattle') || 
+      pathname.startsWith('/api/breeds') || 
+      pathname.startsWith('/api/feed-items') || 
+      pathname.startsWith('/api/medicines');
+    if (isLookupPath) {
+      return true;
+    }
   }
 
   // Determine required action suffix based on request method
@@ -121,7 +135,8 @@ export async function withAuth(
     return unauthorizedResponse('Invalid or expired token');
   }
 
-  if (!authorize(user, allowedRolesOrPermissions, req.method)) {
+  const { pathname } = req.nextUrl;
+  if (!authorize(user, allowedRolesOrPermissions, req.method, pathname)) {
     return forbiddenResponse('You do not have permission for this action');
   }
 
