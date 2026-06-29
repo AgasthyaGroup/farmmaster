@@ -178,7 +178,7 @@ export function mapLiveStockToCattle(
   if (tagToAverageMilk && tagToAverageMilk.has(tag)) {
     doc.milk = tagToAverageMilk.get(tag);
   } else {
-    doc.milk = '-';
+    doc.milk = 0;
   }
 
   // Resolve Farm Name
@@ -222,36 +222,27 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      // Fetch MilkCollection records to compute latest day's average (morning + evening) / 2
+      // Fetch MilkCollection records to compute yesterday's average (morning + evening) / 2
       const milkCollections = await MilkCollection.find({ isDeleted: false })
         .sort({ date: -1, createdAt: -1 })
         .lean();
 
-      // First find the latest date per animal that is strictly before today
+      // Yesterday's date boundary
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayTime = yesterday.getTime();
 
-      const tagToLatestDate = new Map<string, string>();
+      const tagToLatestSum = new Map<string, number>();
       for (const col of milkCollections) {
         const tag = String(col.tag_id || col.tagId || '').trim().toUpperCase();
         if (tag && col.date) {
           const colDate = new Date(col.date);
-          if (colDate < today && !tagToLatestDate.has(tag)) {
-            tagToLatestDate.set(tag, colDate.toDateString());
-          }
-        }
-      }
-
-      // Sum quantities on that latest date
-      const tagToLatestSum = new Map<string, number>();
-      const tagToLatestCount = new Map<string, number>();
-      for (const col of milkCollections) {
-        const tag = String(col.tag_id || col.tagId || '').trim().toUpperCase();
-        if (tag && col.date) {
-          const dateStr = new Date(col.date).toDateString();
-          if (tagToLatestDate.get(tag) === dateStr) {
+          colDate.setHours(0, 0, 0, 0);
+          
+          if (colDate.getTime() === yesterdayTime) {
             tagToLatestSum.set(tag, (tagToLatestSum.get(tag) || 0) + (col.quantity || 0));
-            tagToLatestCount.set(tag, (tagToLatestCount.get(tag) || 0) + 1);
           }
         }
       }
