@@ -45,6 +45,26 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         await syncCalfRecord(record, oldRecord.calfTag);
       }
 
+      // If calving occurred (actualCalvingDate transitioned from unset to set), increment calvings
+      if (record.actualCalvingDate && !oldRecord.actualCalvingDate) {
+        const LiveStockModel = mongoose.models.LiveStock || mongoose.model('LiveStock');
+        const CattleModel = mongoose.models.Cattle || mongoose.model('Cattle');
+        const motherTag = record.tag_id || oldRecord.tag_id;
+        await LiveStockModel.findOneAndUpdate({ tag_id: motherTag }, { $inc: { calvings: 1 } });
+        await CattleModel.findOneAndUpdate({ tag: motherTag }, { $inc: { calvings: 1 } });
+        console.log(`[PUT /api/crossing/[id]] Incremented calving count for mother: ${motherTag}`);
+      }
+
+      // If calving was reverted (actualCalvingDate transitioned from set to unset), decrement calvings
+      if (!record.actualCalvingDate && oldRecord.actualCalvingDate) {
+        const LiveStockModel = mongoose.models.LiveStock || mongoose.model('LiveStock');
+        const CattleModel = mongoose.models.Cattle || mongoose.model('Cattle');
+        const motherTag = record.tag_id || oldRecord.tag_id;
+        await LiveStockModel.findOneAndUpdate({ tag_id: motherTag }, { $inc: { calvings: -1 } });
+        await CattleModel.findOneAndUpdate({ tag: motherTag }, { $inc: { calvings: -1 } });
+        console.log(`[PUT /api/crossing/[id]] Decremented calving count for mother: ${motherTag}`);
+      }
+
       // Update animal status based on pregnancyStatus/calving
       await updateAnimalStatusFromCrossing(record.tag_id, record.pregnancyStatus, record.actualCalvingDate);
 
@@ -71,6 +91,16 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
       const record = await CrossingLog.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
       if (!record) return errorResponse('CrossingLog not found', 404);
+
+      // If the deleted record had actualCalvingDate, decrement calvings
+      if (oldRecord.actualCalvingDate) {
+        const LiveStockModel = mongoose.models.LiveStock || mongoose.model('LiveStock');
+        const CattleModel = mongoose.models.Cattle || mongoose.model('Cattle');
+        const motherTag = oldRecord.tag_id;
+        await LiveStockModel.findOneAndUpdate({ tag_id: motherTag }, { $inc: { calvings: -1 } });
+        await CattleModel.findOneAndUpdate({ tag: motherTag }, { $inc: { calvings: -1 } });
+        console.log(`[DELETE /api/crossing/[id]] Decremented calving count for mother: ${motherTag}`);
+      }
 
       // Clean up the pending calf record if it was pending details
       if (oldRecord.calfTag) {

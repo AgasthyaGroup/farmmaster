@@ -137,11 +137,45 @@ export async function POST(req: NextRequest) {
         delete body.farmId;
       }
 
+      // ── Auto-calculate crossingAttemptNumber ──────────────────────────────
+      const lastCalving = await CrossingLog.findOne({
+        tag_id: cleanTag,
+        isDeleted: false,
+        actualCalvingDate: { $ne: null }
+      }).sort({ actualCalvingDate: -1 });
+
+      const targetCrossingDate = body.crossingDate ? new Date(body.crossingDate) : new Date();
+
+      let attemptsCount = 0;
+      if (lastCalving && lastCalving.actualCalvingDate) {
+        attemptsCount = await CrossingLog.countDocuments({
+          tag_id: cleanTag,
+          isDeleted: false,
+          crossingDate: { $gt: lastCalving.actualCalvingDate, $lt: targetCrossingDate }
+        });
+      } else {
+        attemptsCount = await CrossingLog.countDocuments({
+          tag_id: cleanTag,
+          isDeleted: false,
+          crossingDate: { $lt: targetCrossingDate }
+        });
+      }
+      body.crossingAttemptNumber = attemptsCount + 1;
+
       const record = await CrossingLog.create(body);
       
       // ── Sync born calf to livestock if Calf Tag is present
       if (record.calfTag) {
         await syncCalfRecord(record);
+      }
+
+      // If calving occurred, increment calvings for the mother
+      if (record.actualCalvingDate) {
+        const LiveStockModel = mongoose.models.LiveStock || mongoose.model('LiveStock');
+        const CattleModel = mongoose.models.Cattle || mongoose.model('Cattle');
+        await LiveStockModel.findOneAndUpdate({ tag_id: cleanTag }, { $inc: { calvings: 1 } });
+        await CattleModel.findOneAndUpdate({ tag: cleanTag }, { $inc: { calvings: 1 } });
+        console.log(`[POST /api/crossing] Incremented calving count for mother: ${cleanTag}`);
       }
 
       // Update animal status based on pregnancyStatus/calving
@@ -297,18 +331,7 @@ export async function syncCalfRecord(crossingRecord: any, oldCalfTag?: string) {
           onboardingType: 'CALVING'
         });
 
-        // Increment the calving count for the mother animal in both tables
-        if (motherTag) {
-          await LiveStock.findOneAndUpdate(
-            { tag_id: motherTag },
-            { $inc: { calvings: 1 } }
-          );
-          await CattleModel.findOneAndUpdate(
-            { tag: motherTag },
-            { $inc: { calvings: 1 } }
-          );
-          console.log(`[syncCalfRecord] Incremented calving count for mother: ${motherTag}`);
-        }
+        // Calvings count is handled separately in the POST/PUT/DELETE handlers to be independent of calfTag registration
       }
     }
   } catch (err) {

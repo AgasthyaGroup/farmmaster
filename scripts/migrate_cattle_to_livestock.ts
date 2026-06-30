@@ -46,7 +46,7 @@ async function migrate() {
         farmId: cattle.farmId || null,
         status: String(cattle.status || 'ACTIVE').trim().toUpperCase() === 'ACTIVE' ? 'ACTIVE' : 'ACTIVE',
         name: cattle.name || '',
-        code: cattle.code || `CTL-MIG-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+        code: cattle.code || `CTL-MIG-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         date: cattle.date || null,
         gender: cattle.gender || '',
         dateOfBirth: cattle.dateOfBirth || null,
@@ -76,7 +76,7 @@ async function migrate() {
       migratedCount++;
     }
 
-    console.log("\n======================================");
+    console.log("\n=========~=============================");
     console.log("🎉 MIGRATION COMPLETED");
     console.log(`✅ Mapped & Migrated: ${migratedCount}`);
     console.log(`⏭️  Skipped (already exists): ${skippedCount}`);
@@ -91,3 +91,4 @@ async function migrate() {
 }
 
 migrate();
+
