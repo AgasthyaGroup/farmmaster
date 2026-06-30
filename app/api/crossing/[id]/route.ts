@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 import { syncCalfRecord, updateAnimalStatusFromCrossing } from '../route';
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'CROSSING_LOG', 'CROSSING'], async () => {
     try {
       const { id } = await params;
       const body = await req.json();
@@ -81,7 +81,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'CROSSING_LOG', 'CROSSING'], async () => {
     try {
       const { id } = await params;
       await dbConnect();

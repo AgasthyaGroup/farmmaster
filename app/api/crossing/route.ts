@@ -29,7 +29,7 @@ const crossingSchema = z
   .passthrough();
 
 export async function GET(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE'], async () => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'CROSSING_LOG', 'CROSSING'], async () => {
     try {
       await dbConnect();
       const records = await CrossingLog.find({ isDeleted: false }).sort({ createdAt: -1 });
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE'], async (user) => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'CROSSING_LOG', 'CROSSING'], async (user) => {
     try {
       let rawBody: any;
       try {
