@@ -118,11 +118,35 @@ export function authorize(user: TokenPayload, allowedRolesOrPermissions: string[
       subPrefixes = [reqUpper];
     }
 
+    const getBaseModule = (perm: string): string => {
+      const upper = perm.toUpperCase();
+      const suffixes = ['_VIEW', '_CREATE', '_EDIT', '_DELETE'];
+      for (const s of suffixes) {
+        if (upper.endsWith(s)) {
+          return upper.substring(0, upper.length - s.length);
+        }
+      }
+      return upper;
+    };
+
     return subPrefixes.some(prefix => 
       user.permissions?.some(p => {
         const upperP = String(p).trim().toUpperCase();
+        const userModule = getBaseModule(upperP);
+
+        // The user's permission module must exactly match the required prefix (preventing bleed-through like GRASS matching GRASS_MANAGEMENT)
+        if (userModule !== prefix) {
+          return false;
+        }
+
+        // Wildcard check (e.g. user has 'GRASS_COLLECTION')
+        if (upperP === userModule) {
+          return true;
+        }
+
+        // Specific action check (e.g. user has 'GRASS_COLLECTION_VIEW')
         const requiredActionToken = `${prefix}_${suffix}`;
-        return upperP === requiredActionToken || upperP === prefix || upperP.startsWith(prefix + '_');
+        return upperP === requiredActionToken;
       })
     );
   });
