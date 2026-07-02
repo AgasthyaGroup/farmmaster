@@ -66,6 +66,39 @@ export async function POST(req: NextRequest) {
 
       await dbConnect();
       const LiveStock = mongoose.models.LiveStock || mongoose.model('LiveStock');
+      const Shed = mongoose.models.Shed || mongoose.model('Shed');
+
+      // Resolve shed identifiers to check for animals
+      const targetShed = await Shed.findOne({
+        $or: [
+          { name: shedId },
+          { code: shedId },
+          ...(mongoose.isValidObjectId(shedId) ? [{ _id: new mongoose.Types.ObjectId(shedId) }] : [])
+        ]
+      });
+
+      const shedIdentifiers: any[] = [shedId];
+      if (targetShed) {
+        if (targetShed.name) shedIdentifiers.push(targetShed.name);
+        if (targetShed.code) shedIdentifiers.push(targetShed.code);
+        if (targetShed._id) {
+          shedIdentifiers.push(targetShed._id);
+          shedIdentifiers.push(targetShed._id.toString());
+        }
+      }
+
+      // Query active livestock count in target shed
+      const activeAnimalsCount = await LiveStock.countDocuments({
+        shedId: { $in: shedIdentifiers },
+        farmId: mongoose.isValidObjectId(farmId) ? new mongoose.Types.ObjectId(farmId) : farmId,
+        isDeleted: false,
+        status: { $nin: ['SOLD', 'DECEASED', 'DEAD'] }
+      });
+
+      if (activeAnimalsCount === 0) {
+        return errorResponse(`Cannot save daily feeding records: Shed "${shedId}" contains no active animals.`, 400);
+      }
+
       const savedRecords = [];
 
       const baseDate = new Date(date);
