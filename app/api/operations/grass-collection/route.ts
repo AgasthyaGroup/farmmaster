@@ -74,6 +74,15 @@ export async function POST(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'GRASS_COLLECTION', 'GRASS'], async (user) => {
     try {
       const body = await req.json();
+      if (body.noOfLoads !== undefined && Number(body.noOfLoads) <= 0) {
+        return errorResponse('Number of Loads must be greater than zero', 400);
+      }
+      if (body.weight !== undefined && Number(body.weight) <= 0) {
+        return errorResponse('Weight must be greater than zero', 400);
+      }
+      if (body.noOfWorkers !== undefined && Number(body.noOfWorkers) <= 0) {
+        return errorResponse('Number of Workers must be greater than zero', 400);
+      }
       await dbConnect();
 
       // ── Resolve farmId Dynamically ──────────────────────────────────────
