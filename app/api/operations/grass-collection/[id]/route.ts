@@ -12,7 +12,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     try {
       const { id } = await params;
       await dbConnect();
-      const record = await GrassCollection.findById(id).lean();
+      const record = await GrassCollection.findById(id)
+        .populate({
+          path: 'sourcingFarmId',
+          populate: { path: 'sourcingTo' }
+        })
+        .lean();
       if (!record || record.isDeleted) {
         return errorResponse('GrassCollection not found', 404);
       }

@@ -61,6 +61,7 @@ const BASE_TOKEN_MAP: Record<string, string[]> = {
   SALE_LOG: ['SALE_LOG'],
   GRASS: ['GRASS', 'GRASS_COLLECTION'],
   FEEDING: ['FEEDING'],
+  GRASS_MANAGEMENT: ['GRASS_MANAGEMENT'],
 };
 
 export function authorize(user: TokenPayload, allowedRolesOrPermissions: string[], method: string = 'GET', pathname?: string) {
@@ -79,6 +80,7 @@ export function authorize(user: TokenPayload, allowedRolesOrPermissions: string[
       pathname.startsWith('/api/feed-items') || 
       pathname.startsWith('/api/medicines') ||
       pathname.startsWith('/api/animals') ||
+      pathname.startsWith('/api/grass-management') ||
       pathname.startsWith('/api/tags');
     if (isLookupPath) {
       return true;

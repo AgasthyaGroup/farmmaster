@@ -10,7 +10,13 @@ export async function GET(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'GRASS_COLLECTION', 'GRASS'], async () => {
     try {
       await dbConnect();
-      const records = await GrassCollection.find({ isDeleted: false }).sort({ createdAt: -1 }).lean();
+      const records = await GrassCollection.find({ isDeleted: false })
+        .populate({
+          path: 'sourcingFarmId',
+          populate: { path: 'sourcingTo' }
+        })
+        .sort({ createdAt: -1 })
+        .lean();
 
       // Gather distinct valid ObjectIds and string codes for farmId
       const validFarmIds: mongoose.Types.ObjectId[] = [];

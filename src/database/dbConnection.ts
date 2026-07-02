@@ -24,6 +24,7 @@ import '../models/MilkCollection';
 import '../models/MilkQuality';
 import '../models/Department';
 import '../models/TagSuffix';
+import '../models/GrassManagement';
 
 /**
  * Global is used here to maintain a cached connection across hot reloads
