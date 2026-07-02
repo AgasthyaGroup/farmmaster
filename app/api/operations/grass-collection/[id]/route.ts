@@ -5,6 +5,7 @@ import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse } from '@/src/utils/responses';
 import mongoose from 'mongoose';
 import Farm from '@/src/models/Farm';
+import GrassManagement from '@/src/models/GrassManagement';
 import { reconcileGreenGrassFeedInventory } from '../route';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -55,6 +56,19 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       const oldRecord = await GrassCollection.findById(id).lean();
       if (!oldRecord || oldRecord.isDeleted) {
         return errorResponse('GrassCollection not found', 404);
+      }
+
+      // ── Resolve farmId Dynamically ──────────────────────────────────────
+      let resolvedFarmId: string | null = null;
+      if (body.sourcingFarmId) {
+        const grassFarm = await GrassManagement.findById(body.sourcingFarmId).lean();
+        if (grassFarm && grassFarm.sourcingTo) {
+          resolvedFarmId = grassFarm.sourcingTo.toString();
+        }
+      }
+
+      if (resolvedFarmId) {
+        body.farmId = new mongoose.Types.ObjectId(resolvedFarmId);
       }
 
       const record = await GrassCollection.findByIdAndUpdate(id, body, { new: true, runValidators: true });

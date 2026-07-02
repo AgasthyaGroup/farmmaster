@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import dbConnect from '@/src/database/dbConnection';
 import GrassCollection from '@/src/models/GrassCollection';
 import Farm from '@/src/models/Farm';
+import GrassManagement from '@/src/models/GrassManagement';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
 import mongoose from 'mongoose';
@@ -77,14 +78,25 @@ export async function POST(req: NextRequest) {
 
       // ── Resolve farmId Dynamically ──────────────────────────────────────
       let resolvedFarmId: string | null = null;
-      const rawFarmId = body.farmId ? String(body.farmId).trim() : '';
 
-      if (rawFarmId && /^[0-9a-fA-F]{24}$/.test(rawFarmId)) {
-        resolvedFarmId = rawFarmId;
-      } else if (rawFarmId && rawFarmId !== 'UNKNOWN_FARM') {
-        const farm = await Farm.findOne({ code: rawFarmId });
-        if (farm) {
-          resolvedFarmId = farm._id.toString();
+      // Primary check: Resolve from sourcingFarmId's destination (sourcingTo)
+      if (body.sourcingFarmId) {
+        const grassFarm = await GrassManagement.findById(body.sourcingFarmId).lean();
+        if (grassFarm && grassFarm.sourcingTo) {
+          resolvedFarmId = grassFarm.sourcingTo.toString();
+        }
+      }
+
+      // Secondary check: user submitted farmId
+      if (!resolvedFarmId) {
+        const rawFarmId = body.farmId ? String(body.farmId).trim() : '';
+        if (rawFarmId && /^[0-9a-fA-F]{24}$/.test(rawFarmId)) {
+          resolvedFarmId = rawFarmId;
+        } else if (rawFarmId && rawFarmId !== 'UNKNOWN_FARM') {
+          const farm = await Farm.findOne({ code: rawFarmId });
+          if (farm) {
+            resolvedFarmId = farm._id.toString();
+          }
         }
       }
 
