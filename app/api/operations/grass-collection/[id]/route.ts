@@ -18,6 +18,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           path: 'sourcingFarmId',
           populate: { path: 'sourcingTo' }
         })
+        .populate('laborId')
         .lean();
       if (!record || record.isDeleted) {
         return errorResponse('GrassCollection not found', 404);
@@ -34,8 +35,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         }
       }
 
+      const yieldVal = record.weight && record.harvestedArea ? Number((record.weight / record.harvestedArea).toFixed(2)) : null;
       const populated = {
         ...record,
+        yield: yieldVal,
         farmId: farmObj || (record.farmId ? { name: String(record.farmId) } : null)
       };
 
@@ -59,6 +62,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       }
       if (body.noOfWorkers !== undefined && Number(body.noOfWorkers) <= 0) {
         return errorResponse('Number of Workers must be greater than zero', 400);
+      }
+      if (body.harvestedArea !== undefined && body.harvestedArea !== '' && body.harvestedArea !== null) {
+        if (Number(body.harvestedArea) <= 0) {
+          return errorResponse('Harvested Area must be greater than zero', 400);
+        }
+      }
+      if (body.laborId === '') {
+        body.laborId = null;
+      }
+      if (body.sourcingFarmId === '') {
+        body.sourcingFarmId = null;
       }
       await dbConnect();
 

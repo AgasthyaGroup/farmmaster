@@ -10,6 +10,8 @@ const GrassCollectionSchema = new Schema(
     procuredBy: { type: String, required: false },
     session: { type: String, enum: ['Morning', 'Evening'], required: false },
     noOfWorkers: { type: Number, required: false, min: [1, 'Number of workers must be greater than zero'], default: 1 },
+    laborId: { type: Schema.Types.ObjectId, ref: 'Labor', required: false },
+    harvestedArea: { type: Number, required: false },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }

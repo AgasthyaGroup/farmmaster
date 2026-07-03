@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
           path: 'sourcingFarmId',
           populate: { path: 'sourcingTo' }
         })
+        .populate('laborId')
         .sort({ createdAt: -1 })
         .lean();
 
@@ -57,8 +58,10 @@ export async function GET(req: NextRequest) {
             farmObj = farmByCodeMap.get(valStr.toUpperCase());
           }
         }
+        const yieldVal = r.weight && r.harvestedArea ? Number((r.weight / r.harvestedArea).toFixed(2)) : null;
         return {
           ...r,
+          yield: yieldVal,
           farmId: farmObj || (r.farmId ? { name: String(r.farmId) } : null)
         };
       });
@@ -82,6 +85,17 @@ export async function POST(req: NextRequest) {
       }
       if (body.noOfWorkers !== undefined && Number(body.noOfWorkers) <= 0) {
         return errorResponse('Number of Workers must be greater than zero', 400);
+      }
+      if (body.harvestedArea !== undefined && body.harvestedArea !== '' && body.harvestedArea !== null) {
+        if (Number(body.harvestedArea) <= 0) {
+          return errorResponse('Harvested Area must be greater than zero', 400);
+        }
+      }
+      if (body.laborId === '') {
+        body.laborId = null;
+      }
+      if (body.sourcingFarmId === '') {
+        body.sourcingFarmId = null;
       }
       await dbConnect();
 
