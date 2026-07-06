@@ -8,6 +8,7 @@ const GrassManagementSchema = new Schema(
     status: { type: String, enum: ['ACTIVE', 'INACTIVE'], default: 'ACTIVE', required: true },
     notes: { type: String, required: false },
     area: { type: Number, required: false },
+    lastRegrownAt: { type: Date, default: null, required: false },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }

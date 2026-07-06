@@ -40,6 +40,59 @@ export const createShedSchema = z.object({
   remarks: z.string().optional(),
 });
 
+export const createLandSchema = z.object({
+  farmId: objectIdSchema,
+  name: z.string().min(1, 'Name is required'),
+  code: z.string().min(1, 'Code is required'),
+  totalArea: z.number().positive('Total Area must be a positive number'),
+  unit: z.enum(['Acres', 'Hectares', 'Sq Meters']).optional(),
+  location: z.string().optional(),
+  description: z.string().optional(),
+  
+  // Ownership and Lease
+  ownershipType: z.enum(['OWNED', 'LEASED']).optional(),
+  landownerName: z.string().optional(),
+  landownerPhone: z.string().optional(),
+  leaseStartDate: z.any().optional().nullable(),
+  leaseEndDate: z.any().optional().nullable(),
+  rentAmount: z.number().nonnegative().optional(),
+  paymentInterval: z.enum(['Monthly', 'Quarterly', 'Yearly']).optional(),
+});
+
+export const updateLandSchema = z.object({
+  name: z.string().min(1, 'Name is required').optional(),
+  code: z.string().min(1, 'Code is required').optional(),
+  totalArea: z.number().positive('Total Area must be a positive number').optional(),
+  unit: z.enum(['Acres', 'Hectares', 'Sq Meters']).optional(),
+  status: z.enum(['AVAILABLE', 'LEASED', 'MAINTENANCE']).optional(),
+  location: z.string().optional(),
+  description: z.string().optional(),
+  
+  // Ownership and Lease
+  ownershipType: z.enum(['OWNED', 'LEASED']).optional(),
+  landownerName: z.string().optional(),
+  landownerPhone: z.string().optional(),
+  leaseStartDate: z.any().optional().nullable(),
+  leaseEndDate: z.any().optional().nullable(),
+  rentAmount: z.number().nonnegative().optional(),
+  paymentInterval: z.enum(['Monthly', 'Quarterly', 'Yearly']).optional(),
+  lastRegrownAt: z.any().optional().nullable(),
+}).strict();
+
+export const createSemenStrawSchema = z.object({
+  batchNo: z.string().min(1, 'Batch number is required'),
+  breed: z.string().min(1, 'Breed is required'),
+  noOfStraws: z.number().nonnegative('Number of straws must be greater than or equal to 0'),
+  usedStraws: z.number().nonnegative().optional(),
+  purchaseDate: z.any().optional().nullable(),
+  expiryDate: z.any().optional().nullable(),
+  price: z.number().nonnegative().optional(),
+  farmId: z.any().optional().nullable(),
+  status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
+});
+
+export const updateSemenStrawSchema = createSemenStrawSchema.partial().strict();
+
 export const createCattleSchema = z.object({
   farmId: z.any().optional().nullable(),
   name: z.string().optional(),
@@ -110,8 +163,8 @@ export function sanitizeCattleInput(body: any) {
   const dateFields = ['dateOfBirth', 'purchaseDate', 'date'];
   const numberFields = ['calvings', 'production', 'milkCollection', 'weight', 'purchasePrice', 'lineNo'];
   const stringFields = [
-    'name', 'code', 'breed', 'gender', 'age', 'dameId', 'dameBreed', 
-    'sireId', 'sireBreed', 'farmBorn', 'color', 'purchaseFrom', 'purchaseBy', 
+    'name', 'code', 'breed', 'gender', 'age', 'dameId', 'dameBreed',
+    'sireId', 'sireBreed', 'farmBorn', 'color', 'purchaseFrom', 'purchaseBy',
     'purchaseRemarks', 'remarks'
   ];
 
@@ -161,3 +214,23 @@ export function sanitizeCattleInput(body: any) {
     }
   }
 }
+
+export const createBmcSchema = z.object({
+  farmId: objectIdSchema,
+  name: z.string().min(1, 'Name is required'),
+  code: z.string().min(1, 'Code is required'),
+  capacity: z.number().positive('Capacity must be a positive number'),
+  location: z.string().optional(),
+  description: z.string().optional(),
+});
+
+export const updateBmcSchema = z.object({
+  name: z.string().min(1, 'Name is required').optional(),
+  code: z.string().min(1, 'Code is required').optional(),
+  capacity: z.number().positive('Capacity must be a positive number').optional(),
+  location: z.string().optional(),
+  description: z.string().optional(),
+  status: z.enum(['ACTIVE', 'INACTIVE', 'MAINTENANCE']).optional(),
+  currentVolume: z.number().nonnegative('Stored volume must be non-negative').optional(),
+  temperature: z.number().optional().nullable(),
+}).strict();

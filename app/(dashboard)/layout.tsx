@@ -15,7 +15,9 @@ import {
   Menu,
   X,
   ChevronRight,
-  Tractor
+  Tractor,
+  Map,
+  Snowflake
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -37,6 +39,8 @@ const sidebarItems = [
   { name: 'Sheds', icon: Warehouse, href: '/sheds' },
   { name: 'Tags', icon: Tag, href: '/tags' },
   { name: 'Cattle', icon: CattleIcon, href: '/cattle' },
+  { name: 'Land Management', icon: Map, href: '/land-management' },
+  { name: 'BMC Management', icon: Snowflake, href: '/bmc-management' },
   { name: 'Departments', icon: Building2, href: '/departments' },
   { name: 'User Management', icon: Users, href: '/users' },
   { name: 'Role Management', icon: ShieldCheck, href: '/roles' },

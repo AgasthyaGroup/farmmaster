@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import dbConnect from '@/src/database/dbConnection';
 import GrassCollection from '@/src/models/GrassCollection';
 import Farm from '@/src/models/Farm';
-import GrassManagement from '@/src/models/GrassManagement';
+import Land from '@/src/models/Land';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
 import mongoose from 'mongoose';
@@ -99,14 +99,43 @@ export async function POST(req: NextRequest) {
       }
       await dbConnect();
 
+      if (body.grassAge !== undefined && body.grassAge !== '' && body.grassAge !== null) {
+        if (Number(body.grassAge) < 0) {
+          return errorResponse('Grass Age cannot be negative', 400);
+        }
+      }
+
+      if (body.sourcingFarmId && body.harvestedArea !== undefined && body.harvestedArea !== '' && body.harvestedArea !== null) {
+        const land = await Land.findById(body.sourcingFarmId).lean();
+        if (land && land.totalArea) {
+          let totalAreaAcres = land.totalArea;
+          if (land.unit === 'Hectares') totalAreaAcres = totalAreaAcres * 2.47105;
+          if (land.unit === 'Sq Meters') totalAreaAcres = totalAreaAcres * 0.000247105;
+
+          const query: any = {
+            sourcingFarmId: body.sourcingFarmId,
+            isDeleted: false
+          };
+          if (land.lastRegrownAt) {
+            query.date = { $gt: new Date(land.lastRegrownAt) };
+          }
+          const collections = await GrassCollection.find(query).lean();
+          const utilized = collections.reduce((sum, col) => sum + (col.harvestedArea || 0), 0);
+          const available = Math.max(0, totalAreaAcres - utilized);
+          if (Number(body.harvestedArea) > available) {
+            return errorResponse(`Harvested Area (${body.harvestedArea} Acres) exceeds available area (${available.toFixed(2)} Acres) for this land.`, 400);
+          }
+        }
+      }
+
       // ── Resolve farmId Dynamically ──────────────────────────────────────
       let resolvedFarmId: string | null = null;
 
-      // Primary check: Resolve from sourcingFarmId's destination (sourcingTo)
+      // Primary check: Resolve from sourcingFarmId's destination (farmId)
       if (body.sourcingFarmId) {
-        const grassFarm = await GrassManagement.findById(body.sourcingFarmId).lean();
-        if (grassFarm && grassFarm.sourcingTo) {
-          resolvedFarmId = grassFarm.sourcingTo.toString();
+        const land = await Land.findById(body.sourcingFarmId).lean();
+        if (land && land.farmId) {
+          resolvedFarmId = land.farmId.toString();
         }
       }
 

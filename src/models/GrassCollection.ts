@@ -4,7 +4,7 @@ const GrassCollectionSchema = new Schema(
   {
     date: { type: Date, required: true },
     farmId: { type: Schema.Types.Mixed, ref: 'Farm', required: false },
-    sourcingFarmId: { type: Schema.Types.ObjectId, ref: 'GrassManagement', required: false },
+    sourcingFarmId: { type: Schema.Types.ObjectId, ref: 'Land', required: false },
     noOfLoads: { type: Number, required: true, min: [1, 'Number of loads must be greater than zero'] },
     weight: { type: Number, required: true, min: [1, 'Weight must be greater than zero'] },
     procuredBy: { type: String, required: false },
@@ -12,6 +12,7 @@ const GrassCollectionSchema = new Schema(
     noOfWorkers: { type: Number, required: false, min: [1, 'Number of workers must be greater than zero'], default: 1 },
     laborId: { type: Schema.Types.ObjectId, ref: 'Labor', required: false },
     harvestedArea: { type: Number, required: false },
+    grassAge: { type: Number, required: false, min: [0, 'Grass age cannot be negative'] },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }

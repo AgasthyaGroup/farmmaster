@@ -18,6 +18,7 @@ async function seed() {
       phone: '1234567890',
       password: hashedPassword,
       role: 'SUPER_ADMIN',
+      status: true,
       createdAt: new Date(),
       updatedAt: new Date(),
       __v: 0

@@ -54,7 +54,9 @@ const BASE_TOKEN_MAP: Record<string, string[]> = {
   USERS: ['USER_MANAGEMENT'],
   DEPARTMENTS: ['DEPARTMENT'],
   FARMS: ['FARM_MANAGEMENT'],
+  LAND: ['LAND_MANAGEMENT', 'LAND'],
   SHEDS: ['SHED_MANAGEMENT'],
+  BMC: ['BMC'],
   SHED_LOG: ['SHED_LOG'],
   CROSSING_LOG: ['CROSSING_LOG'],
   PURCHASE_LOG: ['PURCHASE_LOG'],
@@ -75,6 +77,7 @@ export function authorize(user: TokenPayload, allowedRolesOrPermissions: string[
   if (method.toUpperCase() === 'GET' && pathname) {
     const isLookupPath = 
       pathname.startsWith('/api/farms') || 
+      pathname.startsWith('/api/lands') || 
       pathname.startsWith('/api/sheds') || 
       pathname.startsWith('/api/cattle') || 
       pathname.startsWith('/api/breeds') || 
@@ -83,7 +86,8 @@ export function authorize(user: TokenPayload, allowedRolesOrPermissions: string[
       pathname.startsWith('/api/animals') ||
       pathname.startsWith('/api/grass-management') ||
       pathname.startsWith('/api/designations') ||
-      pathname.startsWith('/api/labors') ||
+      pathname.startsWith('/api/labors') || 
+      pathname.startsWith('/api/bmcs') || 
       pathname.startsWith('/api/tags');
     if (isLookupPath) {
       return true;

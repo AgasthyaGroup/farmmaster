@@ -6,6 +6,7 @@ import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse } from '@/src/utils/responses';
 import mongoose from 'mongoose';
 import { syncCalfRecord, updateAnimalStatusFromCrossing } from '../route';
+import SemenStraw from '@/src/models/SemenStraw';
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'CROSSING_LOG', 'CROSSING'], async () => {
@@ -16,6 +17,45 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
       const oldRecord = await CrossingLog.findById(id);
       if (!oldRecord || oldRecord.isDeleted) return errorResponse('CrossingLog not found', 404);
+
+      // ── Semen Straw Reconciliation logic ─────────────────────────────────
+      const oldCrossingType = oldRecord.crossingType;
+      const oldBatchNumber = oldRecord.batchNumber ? String(oldRecord.batchNumber).trim().toUpperCase() : null;
+      const newCrossingType = body.crossingType !== undefined ? body.crossingType : oldCrossingType;
+      const newBatchNumber = body.batchNumber !== undefined ? (body.batchNumber ? String(body.batchNumber).trim().toUpperCase() : null) : oldBatchNumber;
+
+      if (oldCrossingType === 'Artificial' && oldBatchNumber && (newCrossingType !== 'Artificial' || newBatchNumber !== oldBatchNumber)) {
+        await SemenStraw.findOneAndUpdate(
+          { batchNo: oldBatchNumber, isDeleted: false },
+          { $inc: { usedStraws: -1 } }
+        );
+      }
+
+      if (newCrossingType === 'Artificial' && newBatchNumber && (oldCrossingType !== 'Artificial' || newBatchNumber !== oldBatchNumber)) {
+        const batch = await SemenStraw.findOne({ batchNo: newBatchNumber, isDeleted: false });
+        if (!batch) {
+          // Revert old batch update if we modified it
+          if (oldCrossingType === 'Artificial' && oldBatchNumber && (newCrossingType !== 'Artificial' || newBatchNumber !== oldBatchNumber)) {
+            await SemenStraw.findOneAndUpdate(
+              { batchNo: oldBatchNumber, isDeleted: false },
+              { $inc: { usedStraws: 1 } }
+            );
+          }
+          return errorResponse(`Semen straw batch number ${newBatchNumber} does not exist.`, 400);
+        }
+        if (batch.noOfStraws - batch.usedStraws <= 0) {
+          // Revert old batch update if we modified it
+          if (oldCrossingType === 'Artificial' && oldBatchNumber && (newCrossingType !== 'Artificial' || newBatchNumber !== oldBatchNumber)) {
+            await SemenStraw.findOneAndUpdate(
+              { batchNo: oldBatchNumber, isDeleted: false },
+              { $inc: { usedStraws: 1 } }
+            );
+          }
+          return errorResponse(`No straws available in batch ${newBatchNumber} (Available: 0).`, 400);
+        }
+        batch.usedStraws += 1;
+        await batch.save();
+      }
 
       // Normalize tag / tag_id / tagId if present in update body
       const tagInput = body.tag_id || body.tagId || body.tag || '';
@@ -88,6 +128,14 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       
       const oldRecord = await CrossingLog.findById(id);
       if (!oldRecord) return errorResponse('CrossingLog not found', 404);
+
+      // ── Semen Straw Reconciliation logic ─────────────────────────────────
+      if (oldRecord.crossingType === 'Artificial' && oldRecord.batchNumber) {
+        await SemenStraw.findOneAndUpdate(
+          { batchNo: String(oldRecord.batchNumber).trim().toUpperCase(), isDeleted: false },
+          { $inc: { usedStraws: -1 } }
+        );
+      }
 
       const record = await CrossingLog.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
       if (!record) return errorResponse('CrossingLog not found', 404);

@@ -15,14 +15,14 @@ const DEFAULT_ROLES = [
   {
     name: 'FARM_ADMIN',
     description: 'Access to all modules except user management',
-    permissions: ['DASHBOARD', 'FARMS', 'SHEDS', 'TAGS', 'CATTLE'],
+    permissions: ['DASHBOARD', 'FARMS', 'SHEDS', 'TAGS', 'CATTLE', 'LAND', 'LAND_MANAGEMENT', 'BMC'],
     isSystem: true,
     status: true,
   },
   {
     name: 'INCHARGE',
     description: 'Access to operations and data entry for a specific farm',
-    permissions: ['DASHBOARD', 'CATTLE', 'SHED_LOG', 'CROSSING_LOG', 'HEALTH', 'MILK_PRODUCTION'],
+    permissions: ['DASHBOARD', 'CATTLE', 'SHED_LOG', 'CROSSING_LOG', 'HEALTH', 'MILK_PRODUCTION', 'BMC'],
     isSystem: true,
     status: true,
   },

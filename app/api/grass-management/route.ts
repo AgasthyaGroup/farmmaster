@@ -3,6 +3,7 @@ import dbConnect from '@/src/database/dbConnection';
 import GrassManagement from '@/src/models/GrassManagement';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
+import mongoose from 'mongoose';
 
 export async function GET(req: NextRequest) {
   return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'INCHARGE', 'GRASS_MANAGEMENT'], async () => {
@@ -12,7 +13,26 @@ export async function GET(req: NextRequest) {
         .populate('sourcingTo')
         .sort({ createdAt: -1 })
         .lean();
-      return successResponse(records, 'Grass Sourcing Farms fetched successfully');
+
+      // Dynamically calculate utilized area for each farm
+      const GrassCollection = mongoose.models.GrassCollection || mongoose.model('GrassCollection');
+      const enrichedRecords = await Promise.all(records.map(async (record) => {
+        const query: any = {
+          sourcingFarmId: record._id,
+          isDeleted: false
+        };
+        if (record.lastRegrownAt) {
+          query.date = { $gt: new Date(record.lastRegrownAt) };
+        }
+        const collections = await GrassCollection.find(query).lean();
+        const utilizedArea = collections.reduce((sum, col) => sum + (col.harvestedArea || 0), 0);
+        return {
+          ...record,
+          utilizedArea
+        };
+      }));
+
+      return successResponse(enrichedRecords, 'Grass Sourcing Farms fetched successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);
     }

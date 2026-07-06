@@ -19,6 +19,7 @@ import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, createdResponse } from '@/src/utils/responses';
 import { z } from 'zod';
 import mongoose from 'mongoose';
+import SemenStraw from '@/src/models/SemenStraw';
 
 // Validate that the request structure is valid.
 // farmId is optional here because we can resolve it dynamically from the referenced animal or user context.
@@ -161,6 +162,20 @@ export async function POST(req: NextRequest) {
         });
       }
       body.crossingAttemptNumber = attemptsCount + 1;
+
+      // ── Semen Straw Deduction logic ──────────────────────────────────────
+      if (body.crossingType === 'Artificial' && body.batchNumber) {
+        const batch = await SemenStraw.findOne({ batchNo: String(body.batchNumber).trim().toUpperCase(), isDeleted: false });
+        if (!batch) {
+          return errorResponse(`Semen straw batch number ${body.batchNumber} does not exist.`, 400);
+        }
+        if (batch.noOfStraws - batch.usedStraws <= 0) {
+          return errorResponse(`No straws available in batch ${body.batchNumber} (Available: 0).`, 400);
+        }
+        // Increment used count
+        batch.usedStraws += 1;
+        await batch.save();
+      }
 
       const record = await CrossingLog.create(body);
       

@@ -5,7 +5,7 @@ import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse } from '@/src/utils/responses';
 import mongoose from 'mongoose';
 import Farm from '@/src/models/Farm';
-import GrassManagement from '@/src/models/GrassManagement';
+import Land from '@/src/models/Land';
 import { reconcileGreenGrassFeedInventory } from '../route';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -81,12 +81,42 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         return errorResponse('GrassCollection not found', 404);
       }
 
+      if (body.grassAge !== undefined && body.grassAge !== '' && body.grassAge !== null) {
+        if (Number(body.grassAge) < 0) {
+          return errorResponse('Grass Age cannot be negative', 400);
+        }
+      }
+
+      if (body.sourcingFarmId && body.harvestedArea !== undefined && body.harvestedArea !== '' && body.harvestedArea !== null) {
+        const land = await Land.findById(body.sourcingFarmId).lean();
+        if (land && land.totalArea) {
+          let totalAreaAcres = land.totalArea;
+          if (land.unit === 'Hectares') totalAreaAcres = totalAreaAcres * 2.47105;
+          if (land.unit === 'Sq Meters') totalAreaAcres = totalAreaAcres * 0.000247105;
+
+          const query: any = {
+            sourcingFarmId: body.sourcingFarmId,
+            isDeleted: false,
+            _id: { $ne: new mongoose.Types.ObjectId(id) }
+          };
+          if (land.lastRegrownAt) {
+            query.date = { $gt: new Date(land.lastRegrownAt) };
+          }
+          const collections = await GrassCollection.find(query).lean();
+          const utilized = collections.reduce((sum, col) => sum + (col.harvestedArea || 0), 0);
+          const available = Math.max(0, totalAreaAcres - utilized);
+          if (Number(body.harvestedArea) > available) {
+            return errorResponse(`Harvested Area (${body.harvestedArea} Acres) exceeds available area (${available.toFixed(2)} Acres) for this land.`, 400);
+          }
+        }
+      }
+
       // ── Resolve farmId Dynamically ──────────────────────────────────────
       let resolvedFarmId: string | null = null;
       if (body.sourcingFarmId) {
-        const grassFarm = await GrassManagement.findById(body.sourcingFarmId).lean();
-        if (grassFarm && grassFarm.sourcingTo) {
-          resolvedFarmId = grassFarm.sourcingTo.toString();
+        const land = await Land.findById(body.sourcingFarmId).lean();
+        if (land && land.farmId) {
+          resolvedFarmId = land.farmId.toString();
         }
       }
 

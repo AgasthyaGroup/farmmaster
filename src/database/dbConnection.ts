@@ -4,6 +4,8 @@ import mongoose from 'mongoose';
 
 // ─── Pre-register all models to resolve Mongoose lazy-loading race conditions ───
 import '../models/Farm';
+import '../models/Land';
+import '../models/BMC';
 
 import '../models/Shed';
 import '../models/Cattle';
