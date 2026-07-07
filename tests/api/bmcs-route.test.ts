@@ -56,6 +56,43 @@ describe('BMCs API Routes', () => {
   });
 
   describe('POST /api/bmcs', () => {
+    it('successfully defines a BMC', async () => {
+      const mockBmc = {
+        _id: 'b2',
+        farmId: '60c72b2f9b1d8e1f88c8d8a1',
+        name: 'Cooler B',
+        code: 'C2',
+        capacity: 10000,
+        location: 'Shed 2',
+        description: 'New Cooler',
+        currentVolume: 0,
+        status: 'ACTIVE'
+      };
+
+      mockFindOne.mockResolvedValue(null);
+      mockCreate.mockResolvedValue(mockBmc);
+
+      const req = new Request('http://localhost/api/bmcs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          farmId: '60c72b2f9b1d8e1f88c8d8a1',
+          name: 'Cooler B',
+          code: 'C2',
+          capacity: 10000,
+          location: 'Shed 2',
+          description: 'New Cooler'
+        }),
+      });
+
+      const response = await POST(req as any);
+      const body = await response.json();
+
+      expect(response.status).toBe(201);
+      expect(body.success).toBe(true);
+      expect(body.data).toEqual(mockBmc);
+    });
+
     it('returns 400 for invalid body payload', async () => {
       const req = new Request('http://localhost/api/bmcs', {
         method: 'POST',

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import mongoose from 'mongoose';
 
 const { mockFind, mockCreate, mockFindOne, mockFindByIdAndUpdate } = vi.hoisted(() => ({
   mockFind: vi.fn(),
@@ -31,6 +32,11 @@ import { GET, POST } from '@/app/api/lands/route';
 describe('Lands API Routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mongoose.models.GrassCollection = {
+      find: vi.fn().mockReturnValue({
+        lean: vi.fn().mockResolvedValue([])
+      })
+    } as any;
   });
 
   describe('GET /api/lands', () => {
@@ -41,7 +47,9 @@ describe('Lands API Routes', () => {
       
       mockFind.mockReturnValue({
         populate: vi.fn().mockReturnValue({
-          sort: vi.fn().mockResolvedValue(mockLands)
+          sort: vi.fn().mockReturnValue({
+            lean: vi.fn().mockResolvedValue(mockLands)
+          })
         })
       });
 
@@ -51,7 +59,7 @@ describe('Lands API Routes', () => {
 
       expect(response.status).toBe(200);
       expect(body.success).toBe(true);
-      expect(body.data).toEqual(mockLands);
+      expect(body.data).toEqual([{ ...mockLands[0], utilizedArea: 0 }]);
     });
   });
 

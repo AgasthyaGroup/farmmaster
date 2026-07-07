@@ -18,6 +18,8 @@ export async function POST(req: NextRequest) {
       await dbConnect();
 
       const LiveStock = mongoose.models.LiveStock || mongoose.model('LiveStock');
+      const Cattle = mongoose.models.Cattle || mongoose.model('Cattle');
+      const Shed = mongoose.models.Shed || mongoose.model('Shed');
       const savedRecords = [];
 
       // Parse and normalize date to start of day in UTC/local to ensure consistent grouping
@@ -34,12 +36,15 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
+        // Resolve active shed ID: if saving the virtual pregnant workspace, keep individual physical shed code
+        const activeShedId = shedId === 'PREGNANT_WORKFLOW' ? animalExists.shedId : shedId;
+
         // Upsert entry for this animal, date, session
         const filter = {
           tag_id: cleanTag,
           date: baseDate,
           session,
-          shedId,
+          shedId: activeShedId || '-',
           farmId,
         };
 
@@ -57,6 +62,56 @@ export async function POST(req: NextRequest) {
           setDefaultsOnInsert: true
         });
         savedRecords.push(doc);
+
+        // Check if the animal is pregnant and contribution is less than 2 liters
+        let isPregnant = animalExists.status === 'PREGNANT';
+        if (!isPregnant) {
+          const CrossingLog = mongoose.models.CrossingLog || mongoose.model('CrossingLog');
+          const latestCrossing = await CrossingLog.findOne({
+            $or: [{ tag_id: cleanTag }, { tag: cleanTag }],
+            isDeleted: false
+          }).sort({ createdAt: -1 });
+
+          if (latestCrossing && latestCrossing.pregnancyStatus === 'Positive' && !latestCrossing.actualCalvingDate) {
+            isPregnant = true;
+          }
+        }
+
+        if (isPregnant && Number(quantity) < 2) {
+          let dryShed = await Shed.findOne({
+            farmId: farmId,
+            $or: [
+              { code: 'DRY' },
+              { name: /dry/i }
+            ],
+            isDeleted: false
+          });
+
+          if (!dryShed) {
+            dryShed = await Shed.create({
+              farmId,
+              name: 'Dry Shed',
+              code: 'DRY',
+              lines: 1,
+              capacity: 100,
+              status: 'ACTIVE',
+              lineManagement: 'No',
+              milking: 'No',
+              remarks: 'Auto-created Dry Shed for dry cows'
+            });
+          }
+
+          // Move the animal to DRY status and Dry Shed in both unified LiveStock and legacy Cattle records
+          await LiveStock.findByIdAndUpdate(animalExists._id, {
+            status: 'DRY',
+            shedId: dryShed.code
+          });
+
+          await Cattle.findOneAndUpdate({ tag: cleanTag }, {
+            status: 'DRY',
+            shed: dryShed.code
+          });
+        }
       }
 
       return successResponse(savedRecords, 'Bulk milk collections recorded successfully');

@@ -113,7 +113,7 @@ export function deepSanitizeCattleInput(body: any, userFarmId?: string | null) {
 
   // Normalize Status
   const statusVal = String(body.status || 'ACTIVE').trim().toUpperCase();
-  body.status = ['ACTIVE', 'SOLD', 'DECEASED'].includes(statusVal) ? statusVal : 'ACTIVE';
+  body.status = ['ACTIVE', 'SOLD', 'DECEASED', 'PREGNANT', 'DRY', 'EMPTY', 'PENDING'].includes(statusVal) ? statusVal : 'ACTIVE';
 }
 
 // ─── GET API Route ─────────────────────────────────────────────────────────────
@@ -166,9 +166,9 @@ export function mapLiveStockToCattle(
     }
   }
 
-  // Dynamic status check from CrossingLog (only if not SOLD, DECEASED, or DEAD)
-  const isInactive = ['SOLD', 'DECEASED', 'DEAD'].includes(String(doc.status).trim().toUpperCase());
-  if (!isInactive && tagToStatus && tagToStatus.has(tag)) {
+  // Dynamic status check from CrossingLog (only if not SOLD, DECEASED, DEAD, or DRY)
+  const isInactiveOrDry = ['SOLD', 'DECEASED', 'DEAD', 'DRY'].includes(String(doc.status).trim().toUpperCase());
+  if (!isInactiveOrDry && tagToStatus && tagToStatus.has(tag)) {
     doc.status = tagToStatus.get(tag);
   } else {
     doc.status = doc.status || 'ACTIVE';

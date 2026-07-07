@@ -84,7 +84,6 @@ export function authorize(user: TokenPayload, allowedRolesOrPermissions: string[
       pathname.startsWith('/api/feed-items') || 
       pathname.startsWith('/api/medicines') ||
       pathname.startsWith('/api/animals') ||
-      pathname.startsWith('/api/grass-management') ||
       pathname.startsWith('/api/designations') ||
       pathname.startsWith('/api/labors') || 
       pathname.startsWith('/api/bmcs') || 
