@@ -229,6 +229,7 @@ export const createBmcSchema = z.object({
 export const updateBmcSchema = z.object({
   name: z.string().min(1, 'Name is required').optional(),
   code: z.string().min(1, 'Code is required').optional(),
+  farmId: z.any().optional().nullable(),
   capacity: z.number().positive('Capacity must be a positive number').optional(),
   location: z.string().optional(),
   description: z.string().optional(),
