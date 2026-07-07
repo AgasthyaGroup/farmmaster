@@ -7,7 +7,7 @@ const LandSchema = new Schema(
     code: { type: String, required: true },
     totalArea: { type: Number, required: true },
     unit: { type: String, enum: ['Acres', 'Hectares', 'Sq Meters'], default: 'Acres' },
-    status: { type: String, enum: ['AVAILABLE', 'LEASED', 'MAINTENANCE'], default: 'AVAILABLE' },
+    status: { type: String, enum: ['AVAILABLE', 'LEASED', 'MAINTENANCE', 'INACTIVE'], default: 'AVAILABLE' },
     location: { type: String }, // Coordinates or description
     description: { type: String },
     ownershipType: { type: String, enum: ['OWNED', 'LEASED'], default: 'OWNED' },

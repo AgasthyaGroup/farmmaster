@@ -51,6 +51,7 @@ export const createLandSchema = z.object({
   
   // Ownership and Lease
   ownershipType: z.enum(['OWNED', 'LEASED']).optional(),
+  status: z.enum(['AVAILABLE', 'LEASED', 'MAINTENANCE', 'INACTIVE']).optional(),
   landownerName: z.string().optional(),
   landownerPhone: z.string().optional(),
   leaseStartDate: z.any().optional().nullable(),
@@ -62,9 +63,10 @@ export const createLandSchema = z.object({
 export const updateLandSchema = z.object({
   name: z.string().min(1, 'Name is required').optional(),
   code: z.string().min(1, 'Code is required').optional(),
+  farmId: z.any().optional().nullable(),
   totalArea: z.number().positive('Total Area must be a positive number').optional(),
   unit: z.enum(['Acres', 'Hectares', 'Sq Meters']).optional(),
-  status: z.enum(['AVAILABLE', 'LEASED', 'MAINTENANCE']).optional(),
+  status: z.enum(['AVAILABLE', 'LEASED', 'MAINTENANCE', 'INACTIVE']).optional(),
   location: z.string().optional(),
   description: z.string().optional(),
   
