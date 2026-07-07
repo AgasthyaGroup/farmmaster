@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
       const records = await GrassCollection.find({ isDeleted: false })
         .populate({
           path: 'sourcingFarmId',
-          populate: { path: 'sourcingTo' }
+          populate: { path: 'farmId' }
         })
         .populate('laborId')
         .sort({ createdAt: -1 })

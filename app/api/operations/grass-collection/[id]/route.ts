@@ -16,7 +16,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       const record = await GrassCollection.findById(id)
         .populate({
           path: 'sourcingFarmId',
-          populate: { path: 'sourcingTo' }
+          populate: { path: 'farmId' }
         })
         .populate('laborId')
         .lean();

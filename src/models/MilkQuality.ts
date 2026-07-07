@@ -9,6 +9,7 @@ const MilkQualitySchema = new Schema(
     water: { type: Number, required: true, default: 0 },
     farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: false },
     isDeleted: { type: Boolean, default: false },
+    bmcs: { type: Schema.Types.Mixed, default: [] },
   },
   { timestamps: true }
 );
