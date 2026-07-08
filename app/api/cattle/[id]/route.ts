@@ -52,6 +52,43 @@ export async function PUT(
         console.error('Non-blocking legacy sync error during update:', legacyErr);
       }
 
+      // 3. Cascade tag updates to all other collections if tag_id has changed
+      const oldTag = matchingTag;
+      const newTag = updatedLiveStock.tag_id;
+      if (oldTag && newTag && oldTag !== newTag) {
+        try {
+          const MilkCollection = (await import('@/src/models/MilkCollection')).default;
+          const DailyFeeding = (await import('@/src/models/DailyFeeding')).default;
+          const VaccinationLog = (await import('@/src/models/VaccinationLog')).default;
+          const { CrossingLog, SaleLog, TreatmentLog, ShedLog, PurchaseLog } = await import('@/src/models/Logs');
+
+          await Promise.all([
+            // Logs.ts collections
+            CrossingLog.updateMany({ tag_id: oldTag }, { tag_id: newTag, tag: newTag }),
+            SaleLog.updateMany({ tag_id: oldTag }, { tag_id: newTag }),
+            TreatmentLog.updateMany({ tag_id: oldTag }, { tag_id: newTag, tagId: newTag }),
+            ShedLog.updateMany({ tag_id: oldTag }, { tag_id: newTag }),
+            PurchaseLog.updateMany({ tag_id: oldTag }, { tag_id: newTag }),
+
+            // Specialized modules
+            MilkCollection.updateMany({ tag_id: oldTag }, { tag_id: newTag, tagId: newTag }),
+            MilkCollection.updateMany({ tagId: oldTag }, { tag_id: newTag, tagId: newTag }),
+            DailyFeeding.updateMany({ tag_id: oldTag }, { tag_id: newTag, animalId: newTag }),
+            VaccinationLog.updateMany({ tag_id: oldTag }, { tag_id: newTag, tagId: newTag, animalId: newTag }),
+            VaccinationLog.updateMany({ tagId: oldTag }, { tag_id: newTag, tagId: newTag, animalId: newTag }),
+
+            // Child-Parent relationships (Dame / Sire)
+            LiveStock.updateMany({ dameId: oldTag }, { dameId: newTag }),
+            LiveStock.updateMany({ sireId: oldTag }, { sireId: newTag }),
+            Cattle.updateMany({ dame: oldTag }, { dame: newTag }),
+            Cattle.updateMany({ sire: oldTag }, { sire: newTag }),
+          ]);
+          console.log(`Successfully cascaded tag update from ${oldTag} to ${newTag} across all logs.`);
+        } catch (cascadeErr) {
+          console.error('Non-blocking tag update cascade error:', cascadeErr);
+        }
+      }
+
       return successResponse(mapLiveStockToCattle(updatedLiveStock), 'Cattle record updated successfully in unified registry');
     } catch (error: any) {
       console.error('[PUT /api/cattle/[id]] Controller crash prevented:', error);

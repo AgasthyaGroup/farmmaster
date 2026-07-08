@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
         });
         savedRecords.push(doc);
 
-        // Check if the animal is pregnant and contribution is less than 2 liters
+        // Check if the animal is pregnant and contribution is less than 3 liters
         let isPregnant = animalExists.status === 'PREGNANT';
         if (!isPregnant) {
           const CrossingLog = mongoose.models.CrossingLog || mongoose.model('CrossingLog');
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        if (isPregnant && Number(quantity) < 2) {
+        if (isPregnant && Number(quantity) < 3) {
           let dryShed = await Shed.findOne({
             farmId: farmId,
             $or: [
