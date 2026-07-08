@@ -79,14 +79,14 @@ const CattleSchema = new Schema<ICattle>(
 
 CattleSchema.index({ farmId: 1, tag: 1 }, { unique: true });
 
-CattleSchema.pre('save', function (next) {
+CattleSchema.pre('save', function (this: any, next: any) {
   if (String(this.gender).toUpperCase() === 'MALE') {
     this.calvings = 0;
   }
   next();
 });
 
-CattleSchema.pre('findOneAndUpdate', function (next) {
+CattleSchema.pre('findOneAndUpdate', function (this: any, next: any) {
   const update: any = this.getUpdate();
   if (update) {
     if (update.gender && String(update.gender).toUpperCase() === 'MALE') {
