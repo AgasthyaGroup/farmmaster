@@ -376,8 +376,35 @@ export async function updateAnimalStatusFromCrossing(tagId: string, pregnancySta
     }
 
     if (newStatus) {
-      await LiveStock.findOneAndUpdate({ tag_id: cleanTag }, { status: newStatus });
-      await CattleModel.findOneAndUpdate({ tag: cleanTag }, { status: newStatus });
+      const updateDoc: any = { status: newStatus };
+      
+      // Auto-transition Heifer/Calf type to adult COW or BUFFALO after calving
+      if (actualCalvingDate) {
+        const mother = await LiveStock.findOne({ tag_id: cleanTag, isDeleted: false });
+        if (mother) {
+          const curType = String(mother.animalType || '').toUpperCase().trim();
+          let nextType = curType;
+          if (curType.includes('BUFFALO')) {
+            nextType = 'BUFFALO';
+          } else if (curType.includes('COW') || curType.includes('CALF') || curType.includes('HEIFER') || curType === '' || curType === '-') {
+            nextType = 'COW';
+          } else {
+            nextType = 'COW';
+          }
+          
+          if (nextType !== curType) {
+            updateDoc.animalType = nextType;
+            // Also update legacy Cattle
+            await CattleModel.findOneAndUpdate({ tag: cleanTag }, { cattleType: nextType, status: newStatus });
+            console.log(`[updateAnimalStatusFromCrossing] Auto-transitioned mother ${cleanTag} type from ${curType} to ${nextType} after calving.`);
+          }
+        }
+      }
+
+      await LiveStock.findOneAndUpdate({ tag_id: cleanTag }, updateDoc);
+      if (!updateDoc.animalType) {
+        await CattleModel.findOneAndUpdate({ tag: cleanTag }, { status: newStatus });
+      }
       console.log(`[updateAnimalStatusFromCrossing] Synced status of ${cleanTag} to ${newStatus}`);
     }
   } catch (error) {
