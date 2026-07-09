@@ -113,7 +113,7 @@ export function deepSanitizeCattleInput(body: any, userFarmId?: string | null) {
 
   // Normalize Status
   const statusVal = String(body.status || 'ACTIVE').trim().toUpperCase();
-  body.status = ['ACTIVE', 'SOLD', 'DECEASED', 'PREGNANT', 'DRY', 'EMPTY', 'PENDING'].includes(statusVal) ? statusVal : 'ACTIVE';
+  body.status = ['ACTIVE', 'SOLD', 'DECEASED', 'PREGNANT', 'DRY', 'EMPTY', 'PENDING', 'ONE_TIME_MILKING', 'ONE TIME MILKING'].includes(statusVal) ? statusVal : 'ACTIVE';
 
   // Force calvings to 0 if gender is Male
   const genderVal = String(body.gender || '').trim().toUpperCase();
