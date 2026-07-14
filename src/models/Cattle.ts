@@ -79,14 +79,13 @@ const CattleSchema = new Schema<ICattle>(
 
 CattleSchema.index({ farmId: 1, tag: 1 }, { unique: true });
 
-CattleSchema.pre('save', function (this: any, next: any) {
+CattleSchema.pre('save', function (this: any) {
   if (String(this.gender).toUpperCase() === 'MALE') {
     this.calvings = 0;
   }
-  next();
 });
 
-CattleSchema.pre('findOneAndUpdate', function (this: any, next: any) {
+CattleSchema.pre('findOneAndUpdate', function (this: any) {
   const update: any = this.getUpdate();
   if (update) {
     if (update.gender && String(update.gender).toUpperCase() === 'MALE') {
@@ -95,7 +94,6 @@ CattleSchema.pre('findOneAndUpdate', function (this: any, next: any) {
       update.$set.calvings = 0;
     }
   }
-  next();
 });
 
 export default mongoose.models.Cattle || mongoose.model<ICattle>('Cattle', CattleSchema);

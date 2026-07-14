@@ -102,14 +102,13 @@ const LiveStockSchema = new Schema<ILiveStock>(
 
 LiveStockSchema.index({ farmId: 1, tag_id: 1 }, { unique: true });
 
-LiveStockSchema.pre('save', function (this: any, next: any) {
+LiveStockSchema.pre('save', function (this: any) {
   if (String(this.gender).toUpperCase() === 'MALE') {
     this.calvings = 0;
   }
-  next();
 });
 
-LiveStockSchema.pre('findOneAndUpdate', function (this: any, next: any) {
+LiveStockSchema.pre('findOneAndUpdate', function (this: any) {
   const update: any = this.getUpdate();
   if (update) {
     if (update.gender && String(update.gender).toUpperCase() === 'MALE') {
@@ -118,7 +117,6 @@ LiveStockSchema.pre('findOneAndUpdate', function (this: any, next: any) {
       update.$set.calvings = 0;
     }
   }
-  next();
 });
 
 export default mongoose.models.LiveStock || mongoose.model<ILiveStock>('LiveStock', LiveStockSchema);

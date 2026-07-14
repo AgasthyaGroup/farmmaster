@@ -286,11 +286,21 @@ export async function POST(req: NextRequest) {
 
       await dbConnect();
 
-      // Check if tag already exists in active records
-      const existingLiveStock = await LiveStock.findOne({ tag_id: body.tag_id, isDeleted: false });
-      if (existingLiveStock) {
+      // Check if tag already exists in active records in either primary or legacy registry
+      const [existingLiveStock, existingCattle] = await Promise.all([
+        LiveStock.findOne({ tag_id: body.tag_id, isDeleted: false }),
+        Cattle.findOne({ tag: body.tag, isDeleted: false })
+      ]);
+
+      if (existingLiveStock || existingCattle) {
         return errorResponse(`A livestock record with Tag ID [${body.tag_id}] already exists in active inventory.`, 400);
       }
+
+      // Hard-delete any old soft-deleted records with this tag to prevent unique index violation on save
+      await Promise.all([
+        LiveStock.deleteMany({ tag_id: body.tag_id, isDeleted: true }),
+        Cattle.deleteMany({ tag: body.tag, isDeleted: true })
+      ]);
 
       // ── Resolve farmId from short codes if it is still a string
       if (body.farmId && !mongoose.Types.ObjectId.isValid(body.farmId.toString())) {
