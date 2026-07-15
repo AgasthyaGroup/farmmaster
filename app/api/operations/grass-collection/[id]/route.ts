@@ -18,7 +18,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           path: 'sourcingFarmId',
           populate: { path: 'farmId' }
         })
-        .populate('laborId')
         .lean();
       if (!record || record.isDeleted) {
         return errorResponse('GrassCollection not found', 404);
@@ -67,9 +66,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         if (Number(body.harvestedArea) <= 0) {
           return errorResponse('Harvested Area must be greater than zero', 400);
         }
-      }
-      if (body.laborId === '') {
-        body.laborId = null;
       }
       if (body.sourcingFarmId === '') {
         body.sourcingFarmId = null;
