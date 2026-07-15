@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import dbConnect from '@/src/database/dbConnection';
 import MilkQuality from '@/src/models/MilkQuality';
+import BMC from '@/src/models/BMC';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse } from '@/src/utils/responses';
 
@@ -41,6 +42,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       if (!record || record.isDeleted) {
         return errorResponse('MilkQuality not found', 404);
       }
+
+      // Update BMC current volume: liters - indentLiters
+      if (body.bmcs && body.bmcs.length > 0) {
+        const bmcId = body.bmcs[0].bmcId;
+        const liters = body.bmcs[0].liters || 0;
+        const indentLiters = body.indentLiters || 0;
+        const netVolume = Math.max(0, liters - indentLiters);
+        await BMC.findByIdAndUpdate(bmcId, { currentVolume: netVolume });
+      }
+
       return successResponse(record, 'MilkQuality updated successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);
@@ -57,6 +68,13 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       if (!record) {
         return errorResponse('MilkQuality not found', 404);
       }
+
+      // Reset BMC current volume to 0
+      if (record.bmcs && record.bmcs.length > 0) {
+        const bmcId = record.bmcs[0].bmcId;
+        await BMC.findByIdAndUpdate(bmcId, { currentVolume: 0 });
+      }
+
       return successResponse(null, 'MilkQuality deleted successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);
