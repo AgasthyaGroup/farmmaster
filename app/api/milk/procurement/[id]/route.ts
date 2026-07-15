@@ -9,7 +9,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     try {
       const { id } = await params;
       await dbConnect();
-      const record = await MilkProcurement.findById(id);
+      const record = await MilkProcurement.findById(id).populate('farmId', 'name code');
       if (!record || record.isDeleted) {
         return errorResponse('Milk procurement record not found', 404);
       }
