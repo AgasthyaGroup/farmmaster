@@ -16,4 +16,8 @@ const MilkQualitySchema = new Schema(
   { timestamps: true }
 );
 
+if (mongoose.models && mongoose.models.MilkQuality) {
+  delete mongoose.models.MilkQuality;
+}
+
 export default mongoose.models.MilkQuality || mongoose.model('MilkQuality', MilkQualitySchema);
