@@ -188,9 +188,31 @@ export async function POST(req: NextRequest) {
       if (record.actualCalvingDate) {
         const LiveStockModel = mongoose.models.LiveStock || mongoose.model('LiveStock');
         const CattleModel = mongoose.models.Cattle || mongoose.model('Cattle');
-        await LiveStockModel.findOneAndUpdate({ tag_id: cleanTag }, { $inc: { calvings: 1 } });
-        await CattleModel.findOneAndUpdate({ tag: cleanTag }, { $inc: { calvings: 1 } });
-        console.log(`[POST /api/crossing] Incremented calving count for mother: ${cleanTag}`);
+        
+        const mother = await LiveStockModel.findOne({ tag_id: cleanTag, isDeleted: false });
+        if (mother) {
+          const newCalvings = (mother.calvings || 0) + 1;
+          const curType = String(mother.animalType || '').toUpperCase().trim();
+          let nextType = curType;
+          if (curType === 'B.CALF' || curType === 'BCALF' || curType.includes('BUFFALO')) {
+            nextType = 'BUFFALO';
+          } else if (curType === 'C.CALF' || curType === 'CCALF' || curType.includes('COW') || curType.includes('CALF') || curType.includes('HEIFER') || curType === '' || curType === '-') {
+            nextType = 'COW';
+          }
+          
+          await LiveStockModel.findOneAndUpdate(
+            { tag_id: cleanTag },
+            { calvings: newCalvings, animalType: nextType }
+          );
+          await CattleModel.findOneAndUpdate(
+            { tag: cleanTag },
+            { calvings: newCalvings, cattleType: nextType }
+          );
+          console.log(`[POST /api/crossing] Auto-transitioned and incremented calvings for mother: ${cleanTag}`);
+        } else {
+          await LiveStockModel.findOneAndUpdate({ tag_id: cleanTag }, { $inc: { calvings: 1 } });
+          await CattleModel.findOneAndUpdate({ tag: cleanTag }, { $inc: { calvings: 1 } });
+        }
       }
 
       // Update animal status based on pregnancyStatus/calving
@@ -384,9 +406,9 @@ export async function updateAnimalStatusFromCrossing(tagId: string, pregnancySta
         if (mother) {
           const curType = String(mother.animalType || '').toUpperCase().trim();
           let nextType = curType;
-          if (curType.includes('BUFFALO')) {
+          if (curType === 'B.CALF' || curType === 'BCALF' || curType.includes('BUFFALO')) {
             nextType = 'BUFFALO';
-          } else if (curType.includes('COW') || curType.includes('CALF') || curType.includes('HEIFER') || curType === '' || curType === '-') {
+          } else if (curType === 'C.CALF' || curType === 'CCALF' || curType.includes('COW') || curType.includes('CALF') || curType.includes('HEIFER') || curType === '' || curType === '-') {
             nextType = 'COW';
           } else {
             nextType = 'COW';

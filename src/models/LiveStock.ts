@@ -106,6 +106,14 @@ LiveStockSchema.pre('save', function (this: any) {
   if (String(this.gender).toUpperCase() === 'MALE') {
     this.calvings = 0;
   }
+  if (this.calvings && this.calvings > 0) {
+    const curType = String(this.animalType || '').toUpperCase().trim();
+    if (curType === 'B.CALF' || curType === 'BCALF' || curType.includes('BUFFALO')) {
+      this.animalType = 'BUFFALO';
+    } else if (curType === 'C.CALF' || curType === 'CCALF' || curType.includes('COW') || curType.includes('CALF') || curType.includes('HEIFER') || curType === '' || curType === '-') {
+      this.animalType = 'COW';
+    }
+  }
 });
 
 LiveStockSchema.pre('findOneAndUpdate', function (this: any) {
@@ -115,6 +123,30 @@ LiveStockSchema.pre('findOneAndUpdate', function (this: any) {
       update.calvings = 0;
     } else if (update.$set && update.$set.gender && String(update.$set.gender).toUpperCase() === 'MALE') {
       update.$set.calvings = 0;
+    }
+
+    // Auto-transition type if calvings is set > 0
+    let calvingsVal = undefined;
+    let typeVal = undefined;
+    if (update.calvings !== undefined) calvingsVal = update.calvings;
+    if (update.animalType !== undefined) typeVal = update.animalType;
+    if (update.$set) {
+      if (update.$set.calvings !== undefined) calvingsVal = update.$set.calvings;
+      if (update.$set.animalType !== undefined) typeVal = update.$set.animalType;
+    }
+
+    if (calvingsVal !== undefined && Number(calvingsVal) > 0 && typeVal !== undefined) {
+      const curType = String(typeVal).toUpperCase().trim();
+      let nextType = curType;
+      if (curType === 'B.CALF' || curType === 'BCALF' || curType.includes('BUFFALO')) {
+        nextType = 'BUFFALO';
+      } else if (curType === 'C.CALF' || curType === 'CCALF' || curType.includes('COW') || curType.includes('CALF') || curType.includes('HEIFER') || curType === '' || curType === '-') {
+        nextType = 'COW';
+      }
+      if (nextType !== curType) {
+        if (update.animalType !== undefined) update.animalType = nextType;
+        if (update.$set && update.$set.animalType !== undefined) update.$set.animalType = nextType;
+      }
     }
   }
 });

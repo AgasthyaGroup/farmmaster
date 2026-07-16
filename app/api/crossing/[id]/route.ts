@@ -90,9 +90,31 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         const LiveStockModel = mongoose.models.LiveStock || mongoose.model('LiveStock');
         const CattleModel = mongoose.models.Cattle || mongoose.model('Cattle');
         const motherTag = record.tag_id || oldRecord.tag_id;
-        await LiveStockModel.findOneAndUpdate({ tag_id: motherTag }, { $inc: { calvings: 1 } });
-        await CattleModel.findOneAndUpdate({ tag: motherTag }, { $inc: { calvings: 1 } });
-        console.log(`[PUT /api/crossing/[id]] Incremented calving count for mother: ${motherTag}`);
+        
+        const mother = await LiveStockModel.findOne({ tag_id: motherTag, isDeleted: false });
+        if (mother) {
+          const newCalvings = (mother.calvings || 0) + 1;
+          const curType = String(mother.animalType || '').toUpperCase().trim();
+          let nextType = curType;
+          if (curType === 'B.CALF' || curType === 'BCALF' || curType.includes('BUFFALO')) {
+            nextType = 'BUFFALO';
+          } else if (curType === 'C.CALF' || curType === 'CCALF' || curType.includes('COW') || curType.includes('CALF') || curType.includes('HEIFER') || curType === '' || curType === '-') {
+            nextType = 'COW';
+          }
+          
+          await LiveStockModel.findOneAndUpdate(
+            { tag_id: motherTag },
+            { calvings: newCalvings, animalType: nextType }
+          );
+          await CattleModel.findOneAndUpdate(
+            { tag: motherTag },
+            { calvings: newCalvings, cattleType: nextType }
+          );
+          console.log(`[PUT /api/crossing/[id]] Auto-transitioned and incremented calvings for mother: ${motherTag}`);
+        } else {
+          await LiveStockModel.findOneAndUpdate({ tag_id: motherTag }, { $inc: { calvings: 1 } });
+          await CattleModel.findOneAndUpdate({ tag: motherTag }, { $inc: { calvings: 1 } });
+        }
       }
 
       // If calving was reverted (actualCalvingDate transitioned from set to unset), decrement calvings
