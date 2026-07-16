@@ -46,6 +46,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
       body.remainingStock = totalAvailable - usageVal;
 
+      // Sanitize purchaseDate
+      const boughtVal = isNaN(bought) ? 0 : bought;
+      if (boughtVal === 0) {
+        body.purchaseDate = null;
+      } else if (body.purchaseDate) {
+        const parsed = new Date(body.purchaseDate);
+        body.purchaseDate = isNaN(parsed.getTime()) ? null : parsed;
+      }
+
       const record = await FeedInventory.findByIdAndUpdate(id, body, { new: true, runValidators: true });
       return successResponse(record, 'FeedInventory updated successfully');
     } catch (error: any) {

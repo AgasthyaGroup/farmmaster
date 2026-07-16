@@ -37,7 +37,9 @@ export async function POST(req: NextRequest) {
       body.remainingStock = totalAvailable - body.usage;
 
       // Sanitize date fields dynamically to prevent DB crash
-      if (body.purchaseDate) {
+      if (body.bought === 0) {
+        body.purchaseDate = null;
+      } else if (body.purchaseDate) {
         const parsed = new Date(body.purchaseDate);
         body.purchaseDate = isNaN(parsed.getTime()) ? null : parsed;
       } else {

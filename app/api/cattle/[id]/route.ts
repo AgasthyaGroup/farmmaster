@@ -38,6 +38,26 @@ export async function PUT(
       delete body._id;
       delete body.id;
 
+      // Prevent stale status overwrite from PUT requests
+      const isStaleStatusOverwrite = ['ACTIVE', 'EMPTY', 'PENDING'].includes(String(body.status).toUpperCase());
+      if (isStaleStatusOverwrite) {
+        const { CrossingLog } = await import('@/src/models/Logs');
+        const latestCrossing = await CrossingLog.findOne({ tag_id: record.tag_id, isDeleted: false })
+          .sort({ createdAt: -1 })
+          .lean();
+        if (latestCrossing) {
+          if (latestCrossing.actualCalvingDate) {
+            body.status = 'ACTIVE';
+          } else if (latestCrossing.pregnancyStatus === 'Positive') {
+            body.status = 'PREGNANT';
+          } else if (latestCrossing.pregnancyStatus === 'Pending') {
+            body.status = 'PENDING';
+          } else if (latestCrossing.pregnancyStatus === 'Negative') {
+            body.status = 'EMPTY';
+          }
+        }
+      }
+
       // 1. Update in the primary LiveStock collection
       const updatedLiveStock = await LiveStock.findByIdAndUpdate(record._id, body, {
         new: true,

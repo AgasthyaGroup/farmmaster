@@ -155,6 +155,32 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         await syncCalfRecord({ calfTag: '', tag_id: oldRecord.tag_id }, oldRecord.calfTag);
       }
 
+      // Recalculate status for the animal after deletion of this crossing log
+      const motherTag = oldRecord.tag_id;
+      if (motherTag) {
+        const remainingLogs = await CrossingLog.find({ tag_id: motherTag, isDeleted: false })
+          .sort({ createdAt: -1 })
+          .lean();
+        let nextStatus = 'ACTIVE';
+        if (remainingLogs.length > 0) {
+          const latestLog = remainingLogs[0];
+          if (latestLog.actualCalvingDate) {
+            nextStatus = 'ACTIVE';
+          } else if (latestLog.pregnancyStatus === 'Positive') {
+            nextStatus = 'PREGNANT';
+          } else if (latestLog.pregnancyStatus === 'Pending') {
+            nextStatus = 'PENDING';
+          } else if (latestLog.pregnancyStatus === 'Negative') {
+            nextStatus = 'EMPTY';
+          }
+        }
+        const LiveStockModel = mongoose.models.LiveStock || mongoose.model('LiveStock');
+        const CattleModel = mongoose.models.Cattle || mongoose.model('Cattle');
+        await LiveStockModel.findOneAndUpdate({ tag_id: motherTag, isDeleted: false }, { status: nextStatus });
+        await CattleModel.findOneAndUpdate({ tag: motherTag }, { status: nextStatus });
+        console.log(`[DELETE /api/crossing/[id]] Recalculated status of animal ${motherTag} to: ${nextStatus}`);
+      }
+
       return successResponse(null, 'CrossingLog deleted successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);
