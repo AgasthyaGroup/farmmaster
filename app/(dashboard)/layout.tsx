@@ -61,7 +61,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       return;
     }
 
-    setUser(JSON.parse(storedUser));
+    Promise.resolve().then(() => {
+      setUser(JSON.parse(storedUser));
+    });
 
     const removeInterceptor = installAuthFetchInterceptor();
     const intervalId = window.setInterval(() => {

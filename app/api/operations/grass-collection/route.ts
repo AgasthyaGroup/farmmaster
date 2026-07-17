@@ -259,7 +259,7 @@ export async function reconcileGreenGrassFeedInventory(farmId: mongoose.Types.Ob
     }
 
     // Cascade update subsequent FeedInventory entries for 'Green Grass' to keep remainingStock correct
-    let subsequentEntries = await FeedInventory.find({
+    const subsequentEntries = await FeedInventory.find({
       feedType: { $regex: /^green\s*grass$/i },
       farmId,
       isDeleted: false,

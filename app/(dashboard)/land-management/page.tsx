@@ -568,7 +568,7 @@ export default function LandManagementPage() {
                 <Map className="w-8 h-8 text-slate-300" />
               </div>
               <h3 className="text-xl font-extrabold text-slate-900 mb-1">No lands indexed</h3>
-              <p className="text-slate-400 text-sm font-semibold max-w-sm mx-auto">Either refine your query filters or click "Define Land Area" to record your agricultural parcels.</p>
+              <p className="text-slate-400 text-sm font-semibold max-w-sm mx-auto">Either refine your query filters or click &quot;Define Land Area&quot; to record your agricultural parcels.</p>
             </div>
           )}
         </div>

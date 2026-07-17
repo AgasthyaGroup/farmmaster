@@ -20,6 +20,7 @@ import Role from '@/src/models/Role';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse, notFoundResponse } from '@/src/utils/responses';
 import { objectIdSchema, updateUserSchema } from '@/src/utils/validation';
+import bcrypt from 'bcryptjs';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -131,7 +132,6 @@ export async function PUT(
 
       // ── 4. Hash password if provided ────────────────────────────────────
       if (updatePayload.password) {
-        const bcrypt = require('bcryptjs');
         updatePayload.password = await bcrypt.hash(updatePayload.password, 10);
       }
 

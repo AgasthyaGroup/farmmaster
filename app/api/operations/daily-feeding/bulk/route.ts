@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
       const verifiedAnimals = [];
 
       for (const item of collections) {
-        let tagId = item.tag_id || item.tagId || item.tag || '';
+        const tagId = item.tag_id || item.tagId || item.tag || '';
         if (!tagId) continue;
 
         const cleanTag = String(tagId).trim().toUpperCase();

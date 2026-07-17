@@ -127,7 +127,7 @@ export async function DELETE(
       await dbConnect();
 
       const record = await LiveStock.findById(id);
-      let matchingTag = record ? record.tag_id : null;
+      const matchingTag = record ? record.tag_id : null;
 
       const deletedLiveStock = await LiveStock.findByIdAndUpdate(
         id,
