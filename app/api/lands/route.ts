@@ -7,7 +7,7 @@ import { createLandSchema } from '@/src/utils/validation';
 import mongoose from 'mongoose';
 
 export async function GET(req: NextRequest) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'LAND'], async (user) => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'LAND', 'INCHARGE', 'GRASS_COLLECTION', 'GRASS'], async (user) => {
     try {
       await dbConnect();
       const query: any = { isDeleted: false };

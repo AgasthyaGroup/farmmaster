@@ -7,7 +7,7 @@ import { objectIdSchema, updateLandSchema } from '@/src/utils/validation';
 import mongoose from 'mongoose';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'LAND'], async (user) => {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'LAND', 'INCHARGE', 'GRASS_COLLECTION', 'GRASS'], async (user) => {
     try {
       const { id } = await params;
       const parsedId = objectIdSchema.safeParse(id);
