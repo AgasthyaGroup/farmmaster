@@ -1,0 +1,52 @@
+import { NextRequest } from 'next/server';
+import dbConnect from '@/src/database/dbConnection';
+import Customer from '../../models/Customer';
+import { successResponse, errorResponse } from '@/src/utils/responses';
+
+export async function POST(req: NextRequest) {
+  try {
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return errorResponse('Invalid JSON body', 400);
+    }
+
+    const phone = body?.phone?.trim();
+    if (!phone) {
+      return errorResponse('Phone number is required', 400);
+    }
+
+    await dbConnect();
+
+    const universalOtp = '123456';
+    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiration
+
+    let customer = await Customer.findOne({ phone });
+    if (customer) {
+      if (customer.status === false) {
+        return errorResponse('Account is disabled', 403);
+      }
+      customer.otp = universalOtp;
+      customer.otpExpiry = otpExpiry;
+      customer.isDeleted = false;
+      await customer.save();
+    } else {
+      customer = await Customer.create({
+        phone,
+        otp: universalOtp,
+        otpExpiry,
+        status: true,
+        isDeleted: false,
+      });
+    }
+
+    return successResponse(
+      { phone: customer.phone, otp: universalOtp },
+      'OTP sent successfully (universal testing OTP is 123456)'
+    );
+  } catch (error: any) {
+    console.error('[POST /api/customer-app/auth/send-otp] error:', error);
+    return errorResponse(error.message || 'Internal server error', 500);
+  }
+}

@@ -36,7 +36,7 @@ export const MODULE_GROUPS: ModuleGroups = {
       { name: 'Breed Management', baseToken: 'CATTLE', prefix: 'BREED_MANAGEMENT', icon: '🧬', path: '/breed-management' },
       { name: 'Animal Management', baseToken: 'CATTLE', prefix: 'ANIMAL_MANAGEMENT', icon: '🐏', path: '/animal-management' },
       { name: 'Insemination Management', baseToken: 'CROSSING_LOG', prefix: 'INSEMINATION_MANAGEMENT', icon: '🧬', path: '/insemination' },
-      { name: 'Procurement Management', baseToken: 'MILK', prefix: 'PROCUREMENT_MANAGEMENT', icon: '📥', path: '/procurement-management' }
+      { name: 'Procurement Management', baseToken: 'PROCUREMENT_MANAGEMENT', prefix: 'PROCUREMENT_MANAGEMENT', icon: '🛒', path: '/procurement-management' }
     ]
   },
   MODULES: {

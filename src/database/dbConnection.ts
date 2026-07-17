@@ -28,6 +28,8 @@ import '../models/Department';
 import '../models/TagSuffix';
 import '../models/Designation';
 import '../models/Labor';
+import '../models/ProcurementSource';
+import '../../app/api/customer-app/models/Customer';
 
 /**
  * Global is used here to maintain a cached connection across hot reloads
