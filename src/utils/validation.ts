@@ -237,3 +237,24 @@ export const updateBmcSchema = z.object({
   currentVolume: z.number().nonnegative('Stored volume must be non-negative').optional(),
   temperature: z.number().optional().nullable(),
 }).strict();
+
+export const createProcurementResourceSchema = z.object({
+  farmId: objectIdSchema,
+  name: z.string().min(1, 'Name is required'),
+  code: z.string().min(1, 'Code is required'),
+  type: z.enum(['CENTER', 'AGENT', 'VENDOR', 'COOPERATIVE', 'DIRECT_SUPPLIER']).optional(),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  description: z.string().optional(),
+});
+
+export const updateProcurementResourceSchema = z.object({
+  name: z.string().min(1, 'Name is required').optional(),
+  code: z.string().min(1, 'Code is required').optional(),
+  farmId: z.any().optional().nullable(),
+  type: z.enum(['CENTER', 'AGENT', 'VENDOR', 'COOPERATIVE', 'DIRECT_SUPPLIER']).optional(),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  description: z.string().optional(),
+  status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
+}).strict();
