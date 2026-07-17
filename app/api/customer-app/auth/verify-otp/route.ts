@@ -23,10 +23,6 @@ export async function POST(req: NextRequest) {
       return errorResponse('OTP code is required', 400);
     }
 
-    if (phone.startsWith('+91')) {
-      phone = phone.substring(3);
-    }
-
     await dbConnect();
 
     const customer = await Customer.findOne({ phone });
