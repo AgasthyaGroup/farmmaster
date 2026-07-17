@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       return errorResponse('Invalid JSON body', 400);
     }
 
-    const phone = body?.phone?.trim();
+    let phone = body?.phone?.trim();
     const otp = body?.otp?.trim();
 
     if (!phone) {
@@ -21,6 +21,10 @@ export async function POST(req: NextRequest) {
     }
     if (!otp) {
       return errorResponse('OTP code is required', 400);
+    }
+
+    if (phone.startsWith('+91')) {
+      phone = phone.substring(3);
     }
 
     await dbConnect();

@@ -12,9 +12,13 @@ export async function POST(req: NextRequest) {
       return errorResponse('Invalid JSON body', 400);
     }
 
-    const phone = body?.phone?.trim();
+    let phone = body?.phone?.trim();
     if (!phone) {
       return errorResponse('Phone number is required', 400);
+    }
+
+    if (phone.startsWith('+91')) {
+      phone = phone.substring(3);
     }
 
     await dbConnect();
