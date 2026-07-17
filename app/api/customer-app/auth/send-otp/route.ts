@@ -23,23 +23,17 @@ export async function POST(req: NextRequest) {
     const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiration
 
     let customer = await Customer.findOne({ phone });
-    if (customer) {
-      if (customer.status === false) {
-        return errorResponse('Account is disabled', 403);
-      }
-      customer.otp = universalOtp;
-      customer.otpExpiry = otpExpiry;
-      customer.isDeleted = false;
-      await customer.save();
-    } else {
-      customer = await Customer.create({
-        phone,
-        otp: universalOtp,
-        otpExpiry,
-        status: true,
-        isDeleted: false,
-      });
+    if (!customer || customer.isDeleted) {
+      return errorResponse('Mobile number is not registered. Please register first.', 404);
     }
+
+    if (customer.status === false) {
+      return errorResponse('Account is disabled', 403);
+    }
+
+    customer.otp = universalOtp;
+    customer.otpExpiry = otpExpiry;
+    await customer.save();
 
     return successResponse(
       { phone: customer.phone, otp: universalOtp },
