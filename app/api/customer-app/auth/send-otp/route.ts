@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
     await dbConnect();
 
-    const universalOtp = '123456';
+    const universalOtp = '1234';
     const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiration
 
     let customer = await Customer.findOne({ phone });
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 
     return successResponse(
       { phone: customer.phone, otp: universalOtp },
-      'OTP sent successfully (universal testing OTP is 123456)'
+      'OTP sent successfully (universal testing OTP is 1234)'
     );
   } catch (error: any) {
     console.error('[POST /api/customer-app/auth/send-otp] error:', error);
