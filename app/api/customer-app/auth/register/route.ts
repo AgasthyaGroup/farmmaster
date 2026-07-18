@@ -13,14 +13,17 @@ export async function POST(req: NextRequest) {
       return errorResponse('Invalid JSON body', 400);
     }
 
-    const phone = body?.phone?.trim();
-    const name = body?.name?.trim();
-    const email = body?.email?.trim() || '';
-    const address1 = body?.address1?.trim() || '';
-    const address2 = body?.address2?.trim() || '';
-    const city = body?.city?.trim() || '';
-    const state = body?.state?.trim() || '';
-    const pincode = body?.pincode?.trim() || '';
+    const data = body?.registerUser || body;
+
+    const phoneVal = data?.phone !== undefined ? data.phone : data?.mobile;
+    const phone = phoneVal !== undefined ? String(phoneVal).trim() : '';
+    const name = data?.name ? String(data.name).trim() : '';
+    const email = data?.email ? String(data.email).trim() : '';
+    const address1 = data?.address1 ? String(data.address1).trim() : '';
+    const address2 = data?.address2 ? String(data.address2).trim() : '';
+    const city = data?.city ? String(data.city).trim() : '';
+    const state = data?.state ? String(data.state).trim() : '';
+    const pincode = data?.pincode ? String(data.pincode).trim() : '';
 
     if (!phone) {
       return errorResponse('Mobile number (phone) is required', 400);

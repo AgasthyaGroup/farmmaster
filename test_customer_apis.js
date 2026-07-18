@@ -35,6 +35,32 @@ async function runTests() {
     const token = verifyOtpData.data.token;
     console.log("✅ verify-otp auto-registration test passed!\n");
 
+    // 2b. Test register with registerUser nested payload
+    console.log("⏳ 2b. Registering new customer with nested registerUser payload...");
+    const regPhone = `98765${Math.floor(10000 + Math.random() * 90000)}`;
+    const registerRes = await fetch(`${BASE_URL}/api/customer-app/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        registerUser: {
+          name: "Tester",
+          email: "testing@gmail.com",
+          phone: regPhone,
+          address1: "One West",
+          address2: "Nanakramguda",
+          city: "hyd",
+          state: "Telangana",
+          pincode: "500032"
+        }
+      })
+    });
+    const registerData = await registerRes.json();
+    console.log("Response:", JSON.stringify(registerData, null, 2));
+    if (!registerRes.ok || !registerData.success || registerData.data.user.name !== "Tester") {
+      throw new Error("Failed register test");
+    }
+    console.log("✅ register test passed!\n");
+
     // 3. Test POST /addresses
     console.log("⏳ 3. Creating a new Address...");
     const createAddressRes = await fetch(`${BASE_URL}/api/customer-app/addresses`, {
