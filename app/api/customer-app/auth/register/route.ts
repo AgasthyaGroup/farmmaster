@@ -26,19 +26,34 @@ export async function POST(req: NextRequest) {
       return errorResponse('Mobile number (phone) is required', 400);
     }
 
-    if (!name) {
-      return errorResponse('Full name (name) is required', 400);
-    }
-
     await dbConnect();
 
-    // Check if customer already exists
+    // Check if customer already exists and is active
     const existingCustomer = await Customer.findOne({ phone });
+    const isRegistered = !!(existingCustomer && !existingCustomer.isDeleted);
+
+    if (isRegistered) {
+      return successResponse({
+        isRegistered: true,
+        user: {
+          id: existingCustomer!._id,
+          phone: existingCustomer!.phone,
+          name: existingCustomer!.name,
+          email: existingCustomer!.email,
+          role: 'CUSTOMER',
+        },
+      }, 'Mobile number is already registered');
+    }
+
+    // If not registered and name is not provided, return isRegistered: false (check-only mode)
+    if (!name) {
+      return successResponse({
+        isRegistered: false,
+      }, 'Mobile number is not registered');
+    }
+
+    // Proceed with registration since name is provided
     if (existingCustomer) {
-      if (!existingCustomer.isDeleted) {
-        return errorResponse('Mobile number is already registered', 400);
-      }
-      
       // If soft-deleted, restore and update
       const restored = await Customer.findByIdAndUpdate(
         existingCustomer._id,
@@ -73,6 +88,7 @@ export async function POST(req: NextRequest) {
       const refreshToken = generateRefreshToken(payload);
 
       return createdResponse({
+        isRegistered: true,
         token: accessToken,
         refreshToken,
         user: {
@@ -110,6 +126,7 @@ export async function POST(req: NextRequest) {
     const refreshToken = generateRefreshToken(payload);
 
     return createdResponse({
+      isRegistered: true,
       token: accessToken,
       refreshToken,
       user: {
