@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/src/database/dbConnection';
 import Customer from '../models/Customer';
 import Address from '../models/Address';
@@ -34,7 +34,12 @@ export async function GET(req: NextRequest) {
     }
 
     const addresses = await Address.find({ customerId: customer._id, isDeleted: false }).sort({ createdAt: -1 });
-    return successResponse(addresses, 'Addresses retrieved successfully');
+    return NextResponse.json({
+      success: true,
+      message: 'Addresses retrieved successfully',
+      data: addresses,
+      addresses: addresses,
+    });
   } catch (error: any) {
     console.error('[GET /api/customer-app/addresses] error:', error);
     return errorResponse(error.message || 'Internal server error', 500);

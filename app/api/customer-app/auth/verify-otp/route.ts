@@ -79,9 +79,12 @@ export async function POST(req: NextRequest) {
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
+    const isRegistered = !!(customer.name && customer.name.trim().length > 0);
+
     return successResponse({
       token: accessToken,
       refreshToken,
+      isRegistered,
       user: {
         id: customer._id,
         phone: customer.phone,
