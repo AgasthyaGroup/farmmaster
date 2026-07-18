@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/src/database/dbConnection';
 import Customer from '../../models/Customer';
 import Address from '../../models/Address';
@@ -42,7 +42,12 @@ export async function GET(
       return errorResponse('Address not found', 404);
     }
 
-    return successResponse(address, 'Address retrieved successfully');
+    return NextResponse.json({
+      success: true,
+      message: 'Address retrieved successfully',
+      data: address,
+      address: address,
+    });
   } catch (error: any) {
     console.error('[GET /api/customer-app/addresses/[id]] error:', error);
     return errorResponse(error.message || 'Internal server error', 500);
@@ -108,7 +113,12 @@ export async function PUT(
       { new: true }
     );
 
-    return successResponse(updatedAddress, 'Address updated successfully');
+    return NextResponse.json({
+      success: true,
+      message: 'Address updated successfully',
+      data: updatedAddress,
+      address: updatedAddress,
+    });
   } catch (error: any) {
     console.error('[PUT /api/customer-app/addresses/[id]] error:', error);
     return errorResponse(error.message || 'Internal server error', 500);
@@ -188,7 +198,12 @@ export async function PATCH(
       { new: true }
     );
 
-    return successResponse(updatedAddress, 'Address patched successfully');
+    return NextResponse.json({
+      success: true,
+      message: 'Address patched successfully',
+      data: updatedAddress,
+      address: updatedAddress,
+    });
   } catch (error: any) {
     console.error('[PATCH /api/customer-app/addresses/[id]] error:', error);
     return errorResponse(error.message || 'Internal server error', 500);

@@ -10,7 +10,7 @@ export function middleware(request: NextRequest) {
       status: 200,
       headers: {
         'Access-Control-Allow-Origin': origin,
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept',
         'Access-Control-Allow-Credentials': 'true',
       },
@@ -20,7 +20,7 @@ export function middleware(request: NextRequest) {
   // Handle actual request
   const response = NextResponse.next();
   response.headers.set('Access-Control-Allow-Origin', origin);
-  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
   response.headers.set('Access-Control-Allow-Credentials', 'true');
 
