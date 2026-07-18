@@ -55,7 +55,16 @@ export async function POST(req: NextRequest) {
       return errorResponse('Invalid JSON body', 400);
     }
 
-    const { fullName, label, phone, addressLine1, addressLine2, city, state, pincode, isDefault } = body;
+    const fullName = body?.fullName ? String(body.fullName).trim() : '';
+    const label = body?.label ? String(body.label).trim() : '';
+    const phoneVal = body?.phone !== undefined ? body.phone : body?.mobile;
+    const phone = phoneVal !== undefined ? String(phoneVal).trim() : '';
+    const addressLine1 = body?.addressLine1 ? String(body.addressLine1).trim() : '';
+    const addressLine2 = body?.addressLine2 ? String(body.addressLine2).trim() : '';
+    const city = body?.city ? String(body.city).trim() : '';
+    const state = body?.state ? String(body.state).trim() : '';
+    const pincode = body?.pincode ? String(body.pincode).trim() : '';
+    const isDefault = !!body?.isDefault;
 
     if (!fullName || !label || !phone || !addressLine1 || !city || !state || !pincode) {
       return errorResponse('Missing required address fields', 400);
@@ -68,15 +77,15 @@ export async function POST(req: NextRequest) {
 
     const address = await Address.create({
       customerId: customer._id,
-      fullName: fullName.trim(),
-      label: label.trim(),
-      phone: phone.trim(),
-      addressLine1: addressLine1.trim(),
-      addressLine2: addressLine2 ? addressLine2.trim() : '',
-      city: city.trim(),
-      state: state.trim(),
-      pincode: pincode.trim(),
-      isDefault: !!isDefault,
+      fullName,
+      label,
+      phone,
+      addressLine1,
+      addressLine2,
+      city,
+      state,
+      pincode,
+      isDefault,
       isDeleted: false,
     });
 
@@ -112,7 +121,16 @@ export async function PUT(req: NextRequest) {
       return errorResponse('Address ID is required', 400);
     }
 
-    const { fullName, label, phone, addressLine1, addressLine2, city, state, pincode, isDefault } = body;
+    const fullName = body?.fullName ? String(body.fullName).trim() : '';
+    const label = body?.label ? String(body.label).trim() : '';
+    const phoneVal = body?.phone !== undefined ? body.phone : body?.mobile;
+    const phone = phoneVal !== undefined ? String(phoneVal).trim() : '';
+    const addressLine1 = body?.addressLine1 ? String(body.addressLine1).trim() : '';
+    const addressLine2 = body?.addressLine2 ? String(body.addressLine2).trim() : '';
+    const city = body?.city ? String(body.city).trim() : '';
+    const state = body?.state ? String(body.state).trim() : '';
+    const pincode = body?.pincode ? String(body.pincode).trim() : '';
+    const isDefault = !!body?.isDefault;
 
     if (!fullName || !label || !phone || !addressLine1 || !city || !state || !pincode) {
       return errorResponse('Missing required address fields', 400);
@@ -130,15 +148,15 @@ export async function PUT(req: NextRequest) {
     const updatedAddress = await Address.findByIdAndUpdate(
       addressId,
       {
-        fullName: fullName.trim(),
-        label: label.trim(),
-        phone: phone.trim(),
-        addressLine1: addressLine1.trim(),
-        addressLine2: addressLine2 ? addressLine2.trim() : '',
-        city: city.trim(),
-        state: state.trim(),
-        pincode: pincode.trim(),
-        isDefault: !!isDefault,
+        fullName,
+        label,
+        phone,
+        addressLine1,
+        addressLine2,
+        city,
+        state,
+        pincode,
+        isDefault,
       },
       { new: true }
     );
@@ -181,14 +199,17 @@ export async function PATCH(req: NextRequest) {
     }
 
     const updateData: any = {};
-    if (body.fullName !== undefined) updateData.fullName = body.fullName.trim();
-    if (body.label !== undefined) updateData.label = body.label.trim();
-    if (body.phone !== undefined) updateData.phone = body.phone.trim();
-    if (body.addressLine1 !== undefined) updateData.addressLine1 = body.addressLine1.trim();
-    if (body.addressLine2 !== undefined) updateData.addressLine2 = body.addressLine2.trim();
-    if (body.city !== undefined) updateData.city = body.city.trim();
-    if (body.state !== undefined) updateData.state = body.state.trim();
-    if (body.pincode !== undefined) updateData.pincode = body.pincode.trim();
+    if (body.fullName !== undefined) updateData.fullName = String(body.fullName).trim();
+    if (body.label !== undefined) updateData.label = String(body.label).trim();
+    
+    const phoneVal = body.phone !== undefined ? body.phone : body.mobile;
+    if (phoneVal !== undefined) updateData.phone = String(phoneVal).trim();
+    
+    if (body.addressLine1 !== undefined) updateData.addressLine1 = String(body.addressLine1).trim();
+    if (body.addressLine2 !== undefined) updateData.addressLine2 = String(body.addressLine2).trim();
+    if (body.city !== undefined) updateData.city = String(body.city).trim();
+    if (body.state !== undefined) updateData.state = String(body.state).trim();
+    if (body.pincode !== undefined) updateData.pincode = String(body.pincode).trim();
     
     if (body.isDefault !== undefined) {
       updateData.isDefault = !!body.isDefault;

@@ -124,6 +124,44 @@ describe('Customer Addresses API', () => {
     expect(Address.updateMany).toHaveBeenCalledWith({ customerId: 'customer-123' }, { isDefault: false });
   });
 
+  it('POST creates a new address using mobile parameter instead of phone', async () => {
+    vi.mocked(Customer.findOne).mockResolvedValue(mockCustomerRecord);
+    vi.mocked(Address.create).mockResolvedValue({
+      _id: 'addr-new-mobile',
+      fullName: 'Jaswanth Mobile',
+      label: 'Home',
+      phone: '9999922222',
+      addressLine1: 'One West',
+      city: 'HYD',
+      state: 'Telangana',
+      pincode: '500032',
+      isDefault: true,
+    } as any);
+
+    const req = new Request('http://localhost/api/customer-app/addresses', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer valid-token', 'content-type': 'application/json' },
+      body: JSON.stringify({
+        fullName: 'Jaswanth Mobile',
+        label: 'Home',
+        mobile: '9999922222',
+        addressLine1: 'One West',
+        city: 'HYD',
+        state: 'Telangana',
+        pincode: '500032',
+        isDefault: true,
+      }),
+    });
+
+    const response = await POST(req as any);
+    const body = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(body.success).toBe(true);
+    expect(body.data.phone).toBe('9999922222');
+    expect(body.data.fullName).toBe('Jaswanth Mobile');
+  });
+
   it('DELETE soft deletes an address', async () => {
     vi.mocked(Customer.findOne).mockResolvedValue(mockCustomerRecord);
     
