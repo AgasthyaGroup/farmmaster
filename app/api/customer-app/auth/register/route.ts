@@ -31,9 +31,9 @@ export async function POST(req: NextRequest) {
 
     await dbConnect();
 
-    // Check if customer already exists and is active
+    // Check if customer already exists and is active and fully registered (has a name)
     const existingCustomer = await Customer.findOne({ phone });
-    const isRegistered = !!(existingCustomer && !existingCustomer.isDeleted);
+    const isRegistered = !!(existingCustomer && !existingCustomer.isDeleted && existingCustomer.name);
 
     if (isRegistered) {
       return successResponse({
@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
         user: {
           id: existingCustomer!._id,
           phone: existingCustomer!.phone,
+          mobile: existingCustomer!.phone,
           name: existingCustomer!.name,
           email: existingCustomer!.email,
           role: 'CUSTOMER',
