@@ -57,6 +57,37 @@ export async function PUT(
           }
         }
       }
+      // Check if shedId, lineNo, or position changed
+      const oldShed = String(record.shedId || record.shed || '').trim();
+      const newShed = String(body.shedId || body.shed || '').trim();
+      const oldLineNo = Number(record.lineNo) || 0;
+      const newLineNo = Number(body.lineNo) || 0;
+      const oldPosition = Number(record.position) || 0;
+      const newPosition = Number(body.position) || 0;
+
+      const shedChanged = oldShed.toUpperCase() !== newShed.toUpperCase();
+      const lineChanged = oldLineNo !== newLineNo;
+      const positionChanged = oldPosition !== newPosition;
+
+      if (shedChanged || lineChanged || positionChanged) {
+        try {
+          const { ShedLog } = await import('@/src/models/Logs');
+          await ShedLog.create({
+            tag_id: record.tag_id,
+            shiftingDate: body.shiftingDate ? new Date(body.shiftingDate) : new Date(),
+            oldShed: oldShed || '-',
+            newShed: newShed || '-',
+            oldLineNo,
+            newLineNo,
+            oldPosition,
+            newPosition,
+            reason: body.shiftingReason || body.reason || 'Shifted via Cattle Update / Line Management',
+            farmId: record.farmId,
+          });
+        } catch (logErr) {
+          console.error('Non-blocking shed log creation error:', logErr);
+        }
+      }
 
       // 1. Update in the primary LiveStock collection
       const updatedLiveStock = await LiveStock.findByIdAndUpdate(record._id, body, {

@@ -7,7 +7,7 @@ async function testEndpoint(name, endpoint, payload) {
     console.log(`🚀 Testing Module: ${name}`);
     console.log(`📡 Sending POST request to ${endpoint}`);
     console.log(`📦 Payload: ${JSON.stringify(payload)}`);
-    
+
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       method: "POST",
       headers: {

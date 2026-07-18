@@ -280,6 +280,10 @@ export interface IShedLog extends Document {
   shiftingDate?: Date;
   oldShed?: string;
   newShed?: string;
+  oldLineNo?: number;
+  newLineNo?: number;
+  oldPosition?: number;
+  newPosition?: number;
   reason?: string;
   farmId?: mongoose.Types.ObjectId;
   isDeleted: boolean;
@@ -301,6 +305,10 @@ const ShedLogSchema = new Schema<IShedLog>(
     shiftingDate: { type: Date, default: Date.now, set: safeDateParse },
     oldShed: { type: String, trim: true, default: '' },
     newShed: { type: String, trim: true, default: '' },
+    oldLineNo: { type: Number, default: 0 },
+    newLineNo: { type: Number, default: 0 },
+    oldPosition: { type: Number, default: 0 },
+    newPosition: { type: Number, default: 0 },
     reason: { type: String, trim: true, default: '' },
     farmId: { type: Schema.Types.ObjectId, ref: 'Farm', index: true, default: null },
     isDeleted: { type: Boolean, default: false, index: true },

@@ -53,6 +53,8 @@ export async function POST(req: NextRequest) {
           quantity: Number(quantity) || 0,
           selfConsumption: Number(selfConsumption) || 0,
           dayTotal: Number(quantity) || 0,
+          lineNo: Number(animalExists.lineNo) || 0,
+          position: Number(animalExists.position) || 0,
           isDeleted: false,
         };
 

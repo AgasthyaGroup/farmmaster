@@ -51,6 +51,9 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      body.lineNo = Number(animalExists.lineNo) || 0;
+      body.position = Number(animalExists.position) || 0;
+
       // Safe date fallback to prevent DB validation crash
       if (body.date) {
         const parsedDate = new Date(body.date);

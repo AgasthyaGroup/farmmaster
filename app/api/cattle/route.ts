@@ -260,7 +260,49 @@ export async function GET(req: NextRequest) {
       }
 
       const records = await LiveStock.find({ isDeleted: false }).sort({ createdAt: -1 });
-      const mappedRecords = records.map(r => mapLiveStockToCattle(r, farmMap, tagToStatus, tagToAverageMilk));
+      let mappedRecords = records.map(r => mapLiveStockToCattle(r, farmMap, tagToStatus, tagToAverageMilk));
+
+      const { searchParams } = new URL(req.url);
+      const queryDate = searchParams.get('date');
+
+      if (queryDate) {
+        const targetDate = new Date(queryDate);
+        if (!isNaN(targetDate.getTime())) {
+          const targetEnd = new Date(targetDate);
+          targetEnd.setHours(23, 59, 59, 999);
+
+          const { ShedLog } = await import('@/src/models/Logs');
+          const logs = await ShedLog.find({
+            isDeleted: false,
+            shiftingDate: { $gt: targetEnd }
+          }).sort({ shiftingDate: -1, createdAt: -1 }).lean();
+
+          const recordsMap = new Map(mappedRecords.map(r => [String(r.tag_id || r.tag || '').trim().toUpperCase(), r]));
+
+          for (const log of logs) {
+            const tag = String(log.tag_id).trim().toUpperCase();
+            const doc = recordsMap.get(tag);
+            if (doc) {
+              const oldShedVal = log.oldShed === '-' ? null : log.oldShed;
+              doc.shedId = oldShedVal;
+              doc.shed = oldShedVal;
+              doc.lineNo = log.oldLineNo || 0;
+              doc.position = log.oldPosition || 0;
+            }
+          }
+
+          // Filter out animals created/added AFTER the target date
+          mappedRecords = mappedRecords.filter(r => {
+            const addedDate = r.purchaseDate || r.dateOfBirth || r.createdAt;
+            if (addedDate) {
+              const addedTime = new Date(addedDate).getTime();
+              return addedTime <= targetEnd.getTime();
+            }
+            return true;
+          });
+        }
+      }
+
       return successResponse(mappedRecords, 'LiveStock fetched successfully');
     } catch (error: any) {
       return errorResponse(error.message, 500);
