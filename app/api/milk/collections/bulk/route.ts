@@ -36,6 +36,17 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
+        // Validate that collection date is not before animal's registration date
+        const entryRaw = animalExists.date || animalExists.createdAt;
+        if (entryRaw) {
+          const entryDate = new Date(entryRaw);
+          entryDate.setUTCHours(0, 0, 0, 0);
+          if (baseDate.getTime() < entryDate.getTime()) {
+            console.warn(`Tag ID ${cleanTag} was registered after collection date. Skipping bulk collection entry.`);
+            continue;
+          }
+        }
+
         // Resolve active shed ID: if saving the virtual pregnant workspace, keep individual physical shed code
         const activeShedId = shedId === 'PREGNANT_WORKFLOW' ? animalExists.shedId : shedId;
 

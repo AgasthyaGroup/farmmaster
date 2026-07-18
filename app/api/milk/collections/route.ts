@@ -40,6 +40,20 @@ export async function POST(req: NextRequest) {
       body.tag_id = await resolveTagString(body.tag_id);
       body.tagId = body.tag_id;
 
+      // Safe date fallback to prevent DB validation crash
+      let targetDate: Date;
+      if (body.date) {
+        const parsedDate = new Date(body.date);
+        if (isNaN(parsedDate.getTime())) {
+          targetDate = new Date();
+        } else {
+          targetDate = parsedDate;
+        }
+      } else {
+        targetDate = new Date();
+      }
+      body.date = targetDate;
+
       // ── Validation Interceptor Check ──────────────────────────────────────
       const cleanTag = String(body.tag_id).trim().toUpperCase();
       const LiveStock = mongoose.models.LiveStock || mongoose.model('LiveStock');
@@ -54,16 +68,21 @@ export async function POST(req: NextRequest) {
       body.lineNo = Number(animalExists.lineNo) || 0;
       body.position = Number(animalExists.position) || 0;
 
-      // Safe date fallback to prevent DB validation crash
-      if (body.date) {
-        const parsedDate = new Date(body.date);
-        if (isNaN(parsedDate.getTime())) {
-          body.date = new Date();
-        } else {
-          body.date = parsedDate;
+      // Check if collection date is before the animal was registered/entered
+      const entryRaw = animalExists.date || animalExists.createdAt;
+      if (entryRaw) {
+        const entryDate = new Date(entryRaw);
+        entryDate.setHours(0, 0, 0, 0);
+
+        const compareDate = new Date(targetDate);
+        compareDate.setHours(0, 0, 0, 0);
+
+        if (compareDate.getTime() < entryDate.getTime()) {
+          return errorResponse(
+            `Data Validation Error: Animal ${cleanTag} was registered on ${entryDate.toLocaleDateString('en-CA')} and cannot have logs recorded before that date.`,
+            400
+          );
         }
-      } else {
-        body.date = new Date();
       }
 
       const record = await MilkCollection.create(body);
