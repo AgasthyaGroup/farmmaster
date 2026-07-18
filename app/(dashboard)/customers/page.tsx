@@ -11,7 +11,11 @@ import {
   X, 
   Loader2, 
   CheckCircle2, 
-  Info
+  Info,
+  Pencil,
+  Trash2,
+  Save,
+  AlertTriangle
 } from 'lucide-react';
 
 interface Address {
@@ -42,6 +46,13 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  
+  // Edit customer state
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', phone: '', email: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [modalMessage, setModalMessage] = useState({ type: '', text: '' });
+
   const [error, setError] = useState('');
 
   const fetchCustomers = async () => {
@@ -76,6 +87,72 @@ export default function CustomersPage() {
       (customer.email && customer.email.toLowerCase().includes(search))
     );
   });
+
+  const handleEditClick = (customer: Customer) => {
+    setEditingCustomer(customer);
+    setEditForm({
+      name: customer.name || '',
+      phone: customer.phone || '',
+      email: customer.email || '',
+    });
+    setModalMessage({ type: '', text: '' });
+    setSelectedCustomer(null); // Close details modal if open
+  };
+
+  const handleUpdateCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCustomer) return;
+
+    setSubmitting(true);
+    setModalMessage({ type: '', text: '' });
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/admin/customers/${editingCustomer._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(editForm)
+      });
+      
+      const result = await res.json();
+      if (result.success) {
+        setModalMessage({ type: 'success', text: 'Customer profile updated successfully' });
+        await fetchCustomers();
+        setTimeout(() => setEditingCustomer(null), 1200);
+      } else {
+        setModalMessage({ type: 'error', text: result.error || 'Failed to update customer profile' });
+      }
+    } catch (err: any) {
+      setModalMessage({ type: 'error', text: err.message || 'An unexpected error occurred' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteCustomer = async (id: string, name: string) => {
+    const confirmDelete = window.confirm(`Are you sure you want to delete customer "${name || 'Anonymous User'}"? This action soft-deletes the customer profile.`);
+    if (!confirmDelete) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/admin/customers/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const result = await res.json();
+      if (result.success) {
+        await fetchCustomers();
+        setSelectedCustomer(null);
+      } else {
+        alert(result.error || 'Failed to delete customer');
+      }
+    } catch (err: any) {
+      alert(err.message || 'An error occurred while deleting customer');
+    }
+  };
 
   return (
     <div className="space-y-12">
@@ -177,13 +254,29 @@ export default function CustomersPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <button
-                          onClick={() => setSelectedCustomer(customer)}
-                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black text-blue-700 bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-all uppercase tracking-wider"
-                        >
-                          <Info className="w-3.5 h-3.5" />
-                          View Profile
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setSelectedCustomer(customer)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-black text-blue-700 bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-all uppercase tracking-wider"
+                          >
+                            <Info className="w-3.5 h-3.5" />
+                            View
+                          </button>
+                          <button
+                            onClick={() => handleEditClick(customer)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-black text-slate-700 bg-slate-100 border border-slate-200 hover:bg-slate-200 transition-all uppercase tracking-wider"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCustomer(customer._id, customer.name)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-black text-rose-700 bg-rose-50 border border-rose-100 hover:bg-rose-100 transition-all uppercase tracking-wider"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -194,7 +287,7 @@ export default function CustomersPage() {
         </div>
       )}
 
-      {/* Details Modal */}
+      {/* Profile Details Modal */}
       {selectedCustomer && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-8">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-2xl" onClick={() => setSelectedCustomer(null)} />
@@ -302,14 +395,126 @@ export default function CustomersPage() {
               </div>
             </div>
 
-            <div className="mt-8 pt-4 border-t border-slate-100 flex justify-end">
+            <div className="mt-8 pt-4 border-t border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleEditClick(selectedCustomer)}
+                  className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-800 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+                >
+                  <Pencil className="w-4 h-4" />
+                  Edit Profile
+                </button>
+                <button
+                  onClick={() => handleDeleteCustomer(selectedCustomer._id, selectedCustomer.name)}
+                  className="inline-flex items-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-600 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all border border-rose-100"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete Account
+                </button>
+              </div>
               <button
                 onClick={() => setSelectedCustomer(null)}
                 className="bg-slate-900 hover:bg-slate-800 text-white px-8 py-3.5 rounded-2xl font-black uppercase tracking-widest text-xs transition-all active:scale-95"
               >
-                Close Profile
+                Close Details
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Customer Modal */}
+      {editingCustomer && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-8">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-2xl" onClick={() => setEditingCustomer(null)} />
+          
+          <div className="bg-white border border-slate-200 rounded-[32px] p-8 w-full max-w-2xl relative z-10 shadow-3xl animate-in slide-in-from-bottom-32 duration-500">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-6">
+                <div className="w-14 h-14 bg-slate-900 rounded-[20px] flex items-center justify-center shadow-3xl shadow-slate-900/40">
+                  <Pencil className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                   <h2 className="text-2xl font-black text-slate-900 tracking-tight">Edit Customer Profile</h2>
+                   <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-[0.3em] font-black">Credential Authority Register</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setEditingCustomer(null)}
+                className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl text-slate-400 hover:text-slate-900 transition-all transform hover:rotate-90 duration-500"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {modalMessage.text && (
+              <div className={`mb-6 p-4 rounded-[20px] flex items-center gap-3 shadow-sm border ${
+                modalMessage.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'
+              }`}>
+                {modalMessage.type === 'success' && <CheckCircle2 className="w-5 h-5" />}
+                {modalMessage.type === 'error' && <AlertTriangle className="w-5 h-5" />}
+                <p className="font-black text-sm">{modalMessage.text}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateCustomer} className="space-y-6">
+              <div className="space-y-4">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  placeholder="Enter full name"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-[16px] px-4 py-3.5 text-slate-900 font-bold focus:ring-4 focus:ring-slate-900/5 focus:bg-white transition-all text-sm shadow-inner"
+                />
+              </div>
+
+              <div className="space-y-4">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">Mobile Number</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                  placeholder="Enter mobile number"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-[16px] px-4 py-3.5 text-slate-900 font-bold focus:ring-4 focus:ring-slate-900/5 focus:bg-white transition-all text-sm shadow-inner"
+                />
+              </div>
+
+              <div className="space-y-4">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">Email Address</label>
+                <input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  placeholder="Enter email address (optional)"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-[16px] px-4 py-3.5 text-slate-900 font-bold focus:ring-4 focus:ring-slate-900/5 focus:bg-white transition-all text-sm shadow-inner"
+                />
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingCustomer(null)}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {submitting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  Save Changes
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

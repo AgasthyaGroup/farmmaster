@@ -81,6 +81,7 @@ import { GET as getFavourites, POST as postFavourites } from '@/app/api/customer
 import { DELETE as deleteFavourite } from '@/app/api/customer-app/favourites/[id]/route';
 import { GET as getOrders, POST as postOrders } from '@/app/api/customer-app/orders/route';
 import { GET as getCustomers } from '@/app/api/admin/customers/route';
+import { PUT as putAdminCustomer, DELETE as deleteAdminCustomer } from '@/app/api/admin/customers/[id]/route';
 
 describe('Customer Extensions API tests', () => {
   beforeEach(() => {
@@ -325,5 +326,82 @@ describe('Customer Extensions API tests', () => {
     expect(body.data[0].name).toBe('Jaswanth Customer');
     expect(body.data[0].addresses).toHaveLength(1);
     expect(body.data[0].addresses[0].fullName).toBe('Jaswanth G');
+  });
+
+  it('admin/customers/[id] PUT updates customer profile', async () => {
+    const mockLean = vi.fn().mockResolvedValue({
+      _id: 'admin-123',
+      role: 'SUPER_ADMIN',
+      status: true,
+      permissions: ['SUPER_ADMIN'],
+    });
+    const mockSelect = vi.fn(() => ({ lean: mockLean }));
+    vi.mocked(User.findById).mockReturnValue({
+      select: mockSelect,
+    } as any);
+
+    const mockRoleLean = vi.fn().mockResolvedValue({
+      permissions: ['SUPER_ADMIN'],
+    });
+    vi.mocked(Role.findOne).mockReturnValue({
+      lean: mockRoleLean,
+    } as any);
+
+    vi.mocked(Customer.findOne).mockResolvedValue(null);
+    vi.mocked(Customer.findByIdAndUpdate).mockResolvedValue({
+      _id: 'cust-abc',
+      name: 'Jaswanth Updated',
+      phone: '9999988888',
+      email: 'newemail@gmail.com',
+    } as any);
+
+    const req = new NextRequest('http://localhost/api/admin/customers/cust-abc', {
+      method: 'PUT',
+      headers: { 'Authorization': 'Bearer admin-token', 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'Jaswanth Updated', phone: '9999988888', email: 'newemail@gmail.com' }),
+    });
+
+    const response = await putAdminCustomer(req as any, { params: Promise.resolve({ id: 'cust-abc' }) });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data.name).toBe('Jaswanth Updated');
+  });
+
+  it('admin/customers/[id] DELETE soft deletes customer', async () => {
+    const mockLean = vi.fn().mockResolvedValue({
+      _id: 'admin-123',
+      role: 'SUPER_ADMIN',
+      status: true,
+      permissions: ['SUPER_ADMIN'],
+    });
+    const mockSelect = vi.fn(() => ({ lean: mockLean }));
+    vi.mocked(User.findById).mockReturnValue({
+      select: mockSelect,
+    } as any);
+
+    const mockRoleLean = vi.fn().mockResolvedValue({
+      permissions: ['SUPER_ADMIN'],
+    });
+    vi.mocked(Role.findOne).mockReturnValue({
+      lean: mockRoleLean,
+    } as any);
+
+    vi.mocked(Customer.findByIdAndUpdate).mockResolvedValue({
+      _id: 'cust-abc',
+      isDeleted: true,
+    } as any);
+
+    const req = new NextRequest('http://localhost/api/admin/customers/cust-abc', {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer admin-token' },
+    });
+
+    const response = await deleteAdminCustomer(req as any, { params: Promise.resolve({ id: 'cust-abc' }) });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
   });
 });
