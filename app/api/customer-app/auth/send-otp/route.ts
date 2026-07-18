@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
       return errorResponse('Invalid JSON body', 400);
     }
 
-    let phone = body?.phone?.trim();
+    const phone = body?.phone ? String(body.phone).trim() : '';
     if (!phone) {
       return errorResponse('Phone number is required', 400);
     }

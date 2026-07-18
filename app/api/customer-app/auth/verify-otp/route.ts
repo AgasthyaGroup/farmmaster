@@ -13,8 +13,8 @@ export async function POST(req: NextRequest) {
       return errorResponse('Invalid JSON body', 400);
     }
 
-    let phone = body?.phone?.trim();
-    const otp = body?.otp?.trim();
+    const phone = body?.phone ? String(body.phone).trim() : '';
+    const otp = body?.otp ? String(body.otp).trim() : '';
 
     if (!phone) {
       return errorResponse('Phone number is required', 400);
@@ -25,9 +25,27 @@ export async function POST(req: NextRequest) {
 
     await dbConnect();
 
-    const customer = await Customer.findOne({ phone });
+    let customer = await Customer.findOne({ phone });
+    const isUniversalOtp = otp === '1234';
+
     if (!customer || customer.isDeleted) {
-      return errorResponse('Customer record not found. Please request OTP first.', 404);
+      if (isUniversalOtp) {
+        if (customer && customer.isDeleted) {
+          customer.isDeleted = false;
+          customer.status = true;
+          customer.name = customer.name || '';
+          await customer.save();
+        } else {
+          customer = await Customer.create({
+            phone,
+            name: '',
+            status: true,
+            isDeleted: false,
+          });
+        }
+      } else {
+        return errorResponse('Customer record not found. Please request OTP first.', 404);
+      }
     }
 
     if (customer.status === false) {
@@ -35,7 +53,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify OTP code and expiry
-    const isUniversalOtp = otp === '1234';
     if (!isUniversalOtp && customer.otp !== otp) {
       return errorResponse('Invalid OTP code', 400);
     }

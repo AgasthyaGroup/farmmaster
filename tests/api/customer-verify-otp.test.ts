@@ -7,6 +7,7 @@ vi.mock('@/src/database/dbConnection', () => ({
 vi.mock('@/app/api/customer-app/models/Customer', () => ({
   default: {
     findOne: vi.fn(),
+    create: vi.fn(),
   },
 }));
 
@@ -72,5 +73,36 @@ describe('POST /api/customer-app/auth/verify-otp', () => {
     expect(response.status).toBe(400);
     expect(body.success).toBe(false);
     expect(body.error).toContain('Invalid OTP code');
+  });
+
+  it('automatically registers and logs in unregistered customer when using universal OTP 1234', async () => {
+    vi.mocked(Customer.findOne).mockResolvedValue(null);
+    vi.mocked(Customer.create).mockResolvedValue({
+      _id: 'auto-registered-123',
+      phone: '1234567890',
+      name: '',
+      status: true,
+      isDeleted: false,
+    });
+
+    const req = new Request('http://localhost/api/customer-app/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phone: '1234567890', otp: '1234' }),
+      headers: { 'content-type': 'application/json' },
+    });
+
+    const response = await POST(req as any);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data.token).toBe('access-token');
+    expect(body.data.user.id).toBe('auto-registered-123');
+    expect(Customer.create).toHaveBeenCalledWith({
+      phone: '1234567890',
+      name: '',
+      status: true,
+      isDeleted: false,
+    });
   });
 });
