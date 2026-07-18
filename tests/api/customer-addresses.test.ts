@@ -61,8 +61,8 @@ describe('Customer Addresses API', () => {
     vi.mocked(Customer.findOne).mockResolvedValue(mockCustomerRecord);
     
     const mockAddresses = [
-      { _id: 'addr-1', name: 'Home', isDefault: true },
-      { _id: 'addr-2', name: 'Work', isDefault: false },
+      { _id: 'addr-1', fullName: 'Jaswanth G', label: 'Home', isDefault: true },
+      { _id: 'addr-2', fullName: 'Jaswanth Office', label: 'Work', isDefault: false },
     ];
     
     // For Address.find().sort() chaining:
@@ -82,14 +82,16 @@ describe('Customer Addresses API', () => {
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.data).toHaveLength(2);
-    expect(body.data[0].name).toBe('Home');
+    expect(body.data[0].label).toBe('Home');
+    expect(body.data[0].fullName).toBe('Jaswanth G');
   });
 
   it('POST creates a new address', async () => {
     vi.mocked(Customer.findOne).mockResolvedValue(mockCustomerRecord);
     vi.mocked(Address.create).mockResolvedValue({
       _id: 'addr-new',
-      name: 'Office',
+      fullName: 'Jaswanth New',
+      label: 'Office',
       addressLine1: '123 Main St',
       city: 'Austin',
       state: 'TX',
@@ -101,7 +103,8 @@ describe('Customer Addresses API', () => {
       method: 'POST',
       headers: { 'Authorization': 'Bearer valid-token', 'content-type': 'application/json' },
       body: JSON.stringify({
-        name: 'Office',
+        fullName: 'Jaswanth New',
+        label: 'Office',
         phone: '1234567890',
         addressLine1: '123 Main St',
         city: 'Austin',
@@ -116,7 +119,8 @@ describe('Customer Addresses API', () => {
 
     expect(response.status).toBe(201);
     expect(body.success).toBe(true);
-    expect(body.data.name).toBe('Office');
+    expect(body.data.label).toBe('Office');
+    expect(body.data.fullName).toBe('Jaswanth New');
     expect(Address.updateMany).toHaveBeenCalledWith({ customerId: 'customer-123' }, { isDefault: false });
   });
 

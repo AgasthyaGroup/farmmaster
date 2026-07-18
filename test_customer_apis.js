@@ -44,7 +44,8 @@ async function runTests() {
         "Authorization": `Bearer ${token}`
       },
       body: JSON.stringify({
-        name: "Home",
+        fullName: "Jaswanth G",
+        label: "Home",
         phone: testPhone,
         addressLine1: "456 Oak Lane",
         city: "Austin",
@@ -83,7 +84,8 @@ async function runTests() {
         "Authorization": `Bearer ${token}`
       },
       body: JSON.stringify({
-        name: "Work",
+        fullName: "Jaswanth G",
+        label: "Work",
         phone: testPhone,
         addressLine1: "999 Office Plaza",
         city: "Houston",
@@ -94,7 +96,7 @@ async function runTests() {
     });
     const putAddressData = await putAddressRes.json();
     console.log("Response:", JSON.stringify(putAddressData, null, 2));
-    if (!putAddressRes.ok || !putAddressData.success || putAddressData.data.name !== "Work") {
+    if (!putAddressRes.ok || !putAddressData.success || putAddressData.data.label !== "Work") {
       throw new Error("Failed PUT /addresses test");
     }
     console.log("✅ PUT /addresses test passed!\n");
@@ -108,12 +110,12 @@ async function runTests() {
         "Authorization": `Bearer ${token}`
       },
       body: JSON.stringify({
-        name: "Headquarters"
+        fullName: "Jaswanth Office"
       })
     });
     const patchAddressData = await patchAddressRes.json();
     console.log("Response:", JSON.stringify(patchAddressData, null, 2));
-    if (!patchAddressRes.ok || !patchAddressData.success || patchAddressData.data.name !== "Headquarters") {
+    if (!patchAddressRes.ok || !patchAddressData.success || patchAddressData.data.fullName !== "Jaswanth Office") {
       throw new Error("Failed PATCH /addresses test");
     }
     console.log("✅ PATCH /addresses test passed!\n");

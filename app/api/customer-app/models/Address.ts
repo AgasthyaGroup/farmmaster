@@ -3,7 +3,8 @@ import mongoose, { Schema } from 'mongoose';
 const AddressSchema = new Schema(
   {
     customerId: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },
-    name: { type: String, required: true, trim: true },
+    fullName: { type: String, required: true, trim: true },
+    label: { type: String, required: true, trim: true },
     phone: { type: String, required: true, trim: true },
     addressLine1: { type: String, required: true, trim: true },
     addressLine2: { type: String, default: '', trim: true },

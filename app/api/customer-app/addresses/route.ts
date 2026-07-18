@@ -55,9 +55,9 @@ export async function POST(req: NextRequest) {
       return errorResponse('Invalid JSON body', 400);
     }
 
-    const { name, phone, addressLine1, addressLine2, city, state, pincode, isDefault } = body;
+    const { fullName, label, phone, addressLine1, addressLine2, city, state, pincode, isDefault } = body;
 
-    if (!name || !phone || !addressLine1 || !city || !state || !pincode) {
+    if (!fullName || !label || !phone || !addressLine1 || !city || !state || !pincode) {
       return errorResponse('Missing required address fields', 400);
     }
 
@@ -68,7 +68,8 @@ export async function POST(req: NextRequest) {
 
     const address = await Address.create({
       customerId: customer._id,
-      name: name.trim(),
+      fullName: fullName.trim(),
+      label: label.trim(),
       phone: phone.trim(),
       addressLine1: addressLine1.trim(),
       addressLine2: addressLine2 ? addressLine2.trim() : '',
@@ -111,9 +112,9 @@ export async function PUT(req: NextRequest) {
       return errorResponse('Address ID is required', 400);
     }
 
-    const { name, phone, addressLine1, addressLine2, city, state, pincode, isDefault } = body;
+    const { fullName, label, phone, addressLine1, addressLine2, city, state, pincode, isDefault } = body;
 
-    if (!name || !phone || !addressLine1 || !city || !state || !pincode) {
+    if (!fullName || !label || !phone || !addressLine1 || !city || !state || !pincode) {
       return errorResponse('Missing required address fields', 400);
     }
 
@@ -129,7 +130,8 @@ export async function PUT(req: NextRequest) {
     const updatedAddress = await Address.findByIdAndUpdate(
       addressId,
       {
-        name: name.trim(),
+        fullName: fullName.trim(),
+        label: label.trim(),
         phone: phone.trim(),
         addressLine1: addressLine1.trim(),
         addressLine2: addressLine2 ? addressLine2.trim() : '',
@@ -179,7 +181,8 @@ export async function PATCH(req: NextRequest) {
     }
 
     const updateData: any = {};
-    if (body.name !== undefined) updateData.name = body.name.trim();
+    if (body.fullName !== undefined) updateData.fullName = body.fullName.trim();
+    if (body.label !== undefined) updateData.label = body.label.trim();
     if (body.phone !== undefined) updateData.phone = body.phone.trim();
     if (body.addressLine1 !== undefined) updateData.addressLine1 = body.addressLine1.trim();
     if (body.addressLine2 !== undefined) updateData.addressLine2 = body.addressLine2.trim();
