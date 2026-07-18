@@ -43,6 +43,7 @@ const sidebarItems = [
   { name: 'BMC Management', icon: Snowflake, href: '/bmc-management' },
   { name: 'Departments', icon: Building2, href: '/departments' },
   { name: 'User Management', icon: Users, href: '/users' },
+  { name: 'Customers', icon: Users, href: '/customers' },
   { name: 'Role Management', icon: ShieldCheck, href: '/roles' },
 ];
 

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { NextRequest } from 'next/server';
 
 vi.mock('@/src/database/dbConnection', () => ({
   default: vi.fn(),
@@ -6,6 +7,7 @@ vi.mock('@/src/database/dbConnection', () => ({
 
 vi.mock('@/app/api/customer-app/models/Customer', () => ({
   default: {
+    find: vi.fn(),
     findOne: vi.fn(),
     findByIdAndUpdate: vi.fn(),
   },
@@ -13,6 +15,7 @@ vi.mock('@/app/api/customer-app/models/Customer', () => ({
 
 vi.mock('@/app/api/customer-app/models/Address', () => ({
   default: {
+    find: vi.fn(),
     findOne: vi.fn(),
     findByIdAndUpdate: vi.fn(),
     updateMany: vi.fn(),
@@ -40,19 +43,44 @@ vi.mock('@/src/utils/jwt', () => ({
     if (token === 'valid-token') {
       return { userId: 'customer-123', email: '1234567890', role: 'CUSTOMER' };
     }
+    if (token === 'admin-token') {
+      return { userId: 'admin-123', email: 'admin@gmail.com', role: 'SUPER_ADMIN' };
+    }
     return null;
   }),
+}));
+
+vi.mock('@/src/models/User', () => ({
+  default: {
+    findOne: vi.fn(),
+    findById: vi.fn(() => ({
+      select: vi.fn(() => ({
+        lean: vi.fn(),
+      })),
+    })),
+  },
+}));
+
+vi.mock('@/src/models/Role', () => ({
+  default: {
+    findOne: vi.fn(() => ({
+      lean: vi.fn(),
+    })),
+  },
 }));
 
 import Customer from '@/app/api/customer-app/models/Customer';
 import Address from '@/app/api/customer-app/models/Address';
 import Favourite from '@/app/api/customer-app/models/Favourite';
 import Order from '@/app/api/customer-app/models/Order';
+import User from '@/src/models/User';
+import Role from '@/src/models/Role';
 import { GET as getAddress, PUT as putAddress, DELETE as deleteAddress, PATCH as patchAddress } from '@/app/api/customer-app/addresses/[id]/route';
 import { PUT as putProfile } from '@/app/api/customer-app/profile/route';
 import { GET as getFavourites, POST as postFavourites } from '@/app/api/customer-app/favourites/route';
 import { DELETE as deleteFavourite } from '@/app/api/customer-app/favourites/[id]/route';
 import { GET as getOrders, POST as postOrders } from '@/app/api/customer-app/orders/route';
+import { GET as getCustomers } from '@/app/api/admin/customers/route';
 
 describe('Customer Extensions API tests', () => {
   beforeEach(() => {
@@ -242,5 +270,60 @@ describe('Customer Extensions API tests', () => {
 
     expect(Array.isArray(body)).toBe(true);
     expect(body[0].orderNumber).toBe('ORD-100');
+  });
+
+  it('admin/customers GET returns list of customers with grouped addresses', async () => {
+    const mockLean = vi.fn().mockResolvedValue({
+      _id: 'admin-123',
+      role: 'SUPER_ADMIN',
+      status: true,
+      permissions: ['SUPER_ADMIN'],
+    });
+    const mockSelect = vi.fn(() => ({ lean: mockLean }));
+    vi.mocked(User.findById).mockReturnValue({
+      select: mockSelect,
+    } as any);
+
+    const mockRoleLean = vi.fn().mockResolvedValue({
+      permissions: ['SUPER_ADMIN'],
+    });
+    vi.mocked(Role.findOne).mockReturnValue({
+      lean: mockRoleLean,
+    } as any);
+
+    vi.mocked(Customer.find).mockReturnValue({
+      sort: vi.fn().mockResolvedValue([
+        {
+          _id: 'cust-abc',
+          name: 'Jaswanth Customer',
+          phone: '9999988888',
+          toObject: function() { return this; }
+        }
+      ])
+    } as any);
+    vi.mocked(Address.find).mockResolvedValue([
+      {
+        _id: 'addr-xyz',
+        customerId: 'cust-abc',
+        fullName: 'Jaswanth G',
+        addressLine1: 'Nanakramguda',
+        city: 'Hyderabad',
+      }
+    ] as any);
+
+    const req = new NextRequest('http://localhost/api/admin/customers', {
+      method: 'GET',
+      headers: { 'Authorization': 'Bearer admin-token' },
+    });
+
+    const response = await getCustomers(req as any);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].name).toBe('Jaswanth Customer');
+    expect(body.data[0].addresses).toHaveLength(1);
+    expect(body.data[0].addresses[0].fullName).toBe('Jaswanth G');
   });
 });
