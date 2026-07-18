@@ -88,7 +88,9 @@ export async function POST(req: NextRequest) {
       user: {
         id: customer._id,
         phone: customer.phone,
+        mobile: customer.phone,
         name: customer.name,
+        email: customer.email || '',
         role: 'CUSTOMER',
       },
     }, 'Login successful');

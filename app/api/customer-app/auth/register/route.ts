@@ -97,6 +97,7 @@ export async function POST(req: NextRequest) {
         user: {
           id: restored._id,
           phone: restored.phone,
+          mobile: restored.phone,
           name: restored.name,
           email: restored.email,
           role: 'CUSTOMER',
@@ -135,6 +136,7 @@ export async function POST(req: NextRequest) {
       user: {
         id: customer._id,
         phone: customer.phone,
+        mobile: customer.phone,
         name: customer.name,
         email: customer.email,
         role: 'CUSTOMER',
