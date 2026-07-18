@@ -113,6 +113,74 @@ describe('Customer Extensions API tests', () => {
     expect(body.data.fullName).toBe('Jaswanth G');
   });
 
+  it('addresses/[id] PUT updates address details', async () => {
+    vi.mocked(Customer.findOne).mockResolvedValue(mockCustomerRecord);
+    vi.mocked(Address.findOne).mockResolvedValue({
+      _id: 'addr-1',
+      customerId: 'customer-123',
+      isDeleted: false,
+    } as any);
+    vi.mocked(Address.findByIdAndUpdate).mockResolvedValue({
+      _id: 'addr-1',
+      fullName: 'Jaswanth Updated',
+      label: 'Work',
+      phone: '1234567890',
+      addressLine1: '789 Main St',
+      city: 'Austin',
+      state: 'TX',
+      pincode: '78701',
+      isDefault: true,
+    } as any);
+
+    const req = new Request('http://localhost/api/customer-app/addresses/addr-1', {
+      method: 'PUT',
+      headers: { 'Authorization': 'Bearer valid-token', 'content-type': 'application/json' },
+      body: JSON.stringify({
+        fullName: 'Jaswanth Updated',
+        label: 'Work',
+        phone: '1234567890',
+        addressLine1: '789 Main St',
+        city: 'Austin',
+        state: 'TX',
+        pincode: '78701',
+        isDefault: true,
+      }),
+    });
+
+    const response = await putAddress(req as any, { params: Promise.resolve({ id: 'addr-1' }) });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data.fullName).toBe('Jaswanth Updated');
+  });
+
+  it('addresses/[id] PATCH sets address as default', async () => {
+    vi.mocked(Customer.findOne).mockResolvedValue(mockCustomerRecord);
+    vi.mocked(Address.findOne).mockResolvedValue({
+      _id: 'addr-1',
+      customerId: 'customer-123',
+      isDeleted: false,
+    } as any);
+    vi.mocked(Address.findByIdAndUpdate).mockResolvedValue({
+      _id: 'addr-1',
+      isDefault: true,
+    } as any);
+
+    const req = new Request('http://localhost/api/customer-app/addresses/addr-1', {
+      method: 'PATCH',
+      headers: { 'Authorization': 'Bearer valid-token', 'content-type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+
+    const response = await patchAddress(req as any, { params: Promise.resolve({ id: 'addr-1' }) });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data.isDefault).toBe(true);
+  });
+
   it('favourites GET returns custom structure', async () => {
     vi.mocked(Customer.findOne).mockResolvedValue(mockCustomerRecord);
     vi.mocked(Favourite.find).mockResolvedValue([
