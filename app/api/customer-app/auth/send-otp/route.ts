@@ -24,7 +24,10 @@ export async function POST(req: NextRequest) {
 
     let customer = await Customer.findOne({ phone });
     if (!customer || customer.isDeleted) {
-      return errorResponse('Mobile number is not registered. Please register first.', 404);
+      return successResponse(
+        { isRegistered: false },
+        'Mobile number is not registered'
+      );
     }
 
     if (customer.status === false) {
@@ -36,7 +39,7 @@ export async function POST(req: NextRequest) {
     await customer.save();
 
     return successResponse(
-      { phone: customer.phone, otp: universalOtp },
+      { phone: customer.phone, otp: universalOtp, isRegistered: true },
       'OTP sent successfully (universal testing OTP is 1234)'
     );
   } catch (error: any) {
