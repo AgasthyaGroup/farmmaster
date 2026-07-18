@@ -254,29 +254,13 @@ export default function CustomersPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => setSelectedCustomer(customer)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-black text-blue-700 bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-all uppercase tracking-wider"
-                          >
-                            <Info className="w-3.5 h-3.5" />
-                            View
-                          </button>
-                          <button
-                            onClick={() => handleEditClick(customer)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-black text-slate-700 bg-slate-100 border border-slate-200 hover:bg-slate-200 transition-all uppercase tracking-wider"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteCustomer(customer._id, customer.name)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-black text-rose-700 bg-rose-50 border border-rose-100 hover:bg-rose-100 transition-all uppercase tracking-wider"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            Delete
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => setSelectedCustomer(customer)}
+                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black text-blue-700 bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-all uppercase tracking-wider shadow-sm hover:shadow"
+                        >
+                          <Info className="w-3.5 h-3.5" />
+                          View Profile
+                        </button>
                       </td>
                     </tr>
                   ))
