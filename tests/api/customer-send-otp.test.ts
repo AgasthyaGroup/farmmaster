@@ -48,6 +48,8 @@ describe('POST /api/customer-app/auth/send-otp', () => {
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.data.isRegistered).toBe(false);
+    expect(body.data.otp).toBe('1234');
+    expect(body.data.phone).toBe('1234567890');
   });
 
   it('sends otp and returns isRegistered: true if customer exists and is active', async () => {

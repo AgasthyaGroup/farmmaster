@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     let customer = await Customer.findOne({ phone });
     if (!customer || customer.isDeleted) {
       return successResponse(
-        { isRegistered: false },
+        { phone, otp: universalOtp, isRegistered: false },
         'Mobile number is not registered'
       );
     }
