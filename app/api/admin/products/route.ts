@@ -27,10 +27,10 @@ export async function POST(req: NextRequest) {
         return errorResponse('Invalid JSON body', 400);
       }
 
-      const { name, sku, price, quantity, size, image, description, benefits, status, category, subcategory } = body;
+      const { name, sku, price, quantity, size, image, description, benefits, status, categoryId, categoryName, categoryCode } = body;
 
-      if (!name || !sku || price === undefined || quantity === undefined || !category) {
-        return errorResponse('Missing required fields: name, sku, price, quantity, category', 400);
+      if (!name || !sku || price === undefined || quantity === undefined || !categoryId || !categoryName || !categoryCode) {
+        return errorResponse('Missing required fields: name, sku, price, quantity, categoryId, categoryName, categoryCode', 400);
       }
 
       await dbConnect();
@@ -51,8 +51,9 @@ export async function POST(req: NextRequest) {
         description: description || '',
         benefits: benefits || [],
         status: status || 'inactive',
-        category,
-        subcategory: subcategory || { name: 'None', code: 'NONE' },
+        categoryId,
+        categoryName,
+        categoryCode,
       });
 
       return createdResponse(newProduct, 'Product created successfully');

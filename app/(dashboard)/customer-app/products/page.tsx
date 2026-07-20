@@ -41,8 +41,9 @@ interface Product {
   description: string;
   benefits: string[];
   status: string;
-  category: Category;
-  subcategory: Subcategory;
+  categoryId: string;
+  categoryName: string;
+  categoryCode: string;
   createdAt: string;
 }
 
@@ -68,11 +69,12 @@ export default function ProductsPage() {
     image: '',
     description: '',
     status: 'inactive',
+    categoryId: '',
     categoryName: '',
     categoryCode: '',
-    subcategoryName: '',
-    subcategoryCode: '',
   });
+
+  const [categories, setCategories] = useState<any[]>([]);
 
   const [benefitsInput, setBenefitsInput] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -130,8 +132,24 @@ export default function ProductsPage() {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/admin/categories', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const result = await res.json();
+      if (result.success) {
+        setCategories(result.data);
+      }
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+    }
+  };
+
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
 
   const handleOpenAddModal = () => {
@@ -145,10 +163,9 @@ export default function ProductsPage() {
       image: '',
       description: '',
       status: 'inactive',
+      categoryId: '',
       categoryName: '',
       categoryCode: '',
-      subcategoryName: '',
-      subcategoryCode: '',
     });
     setBenefitsInput('');
     setModalMessage({ type: '', text: '' });
@@ -166,10 +183,9 @@ export default function ProductsPage() {
       image: product.image || '',
       description: product.description || '',
       status: product.status || 'inactive',
-      categoryName: product.category?.name || '',
-      categoryCode: product.category?.code || '',
-      subcategoryName: product.subcategory?.name || '',
-      subcategoryCode: product.subcategory?.code || '',
+      categoryId: product.categoryId || '',
+      categoryName: product.categoryName || '',
+      categoryCode: product.categoryCode || '',
     });
     setBenefitsInput(product.benefits ? product.benefits.join('\n') : '');
     setModalMessage({ type: '', text: '' });
@@ -196,14 +212,9 @@ export default function ProductsPage() {
       description: form.description,
       status: form.status,
       benefits: parsedBenefits,
-      category: {
-        name: form.categoryName || 'General',
-        code: form.categoryCode || 'GEN',
-      },
-      subcategory: {
-        name: form.subcategoryName || 'General',
-        code: form.subcategoryCode || 'GEN',
-      }
+      categoryId: form.categoryId,
+      categoryName: form.categoryName,
+      categoryCode: form.categoryCode,
     };
 
     try {
@@ -264,7 +275,7 @@ export default function ProductsPage() {
     return (
       product.name.toLowerCase().includes(search) ||
       product.sku.toLowerCase().includes(search) ||
-      (product.category?.name && product.category.name.toLowerCase().includes(search))
+      (product.categoryName && product.categoryName.toLowerCase().includes(search))
     );
   });
 
@@ -359,8 +370,8 @@ export default function ProductsPage() {
                       <td className="px-6 py-4 text-sm font-bold text-slate-700">{product.sku}</td>
                       <td className="px-6 py-4 text-sm font-bold text-slate-900">
                         <div className="flex flex-col">
-                          <span>{product.category?.name || '—'}</span>
-                          <span className="text-[10px] text-slate-400">{product.subcategory?.name || '—'}</span>
+                          <span>{product.categoryName || '—'}</span>
+                          <span className="text-[10px] text-slate-400">{product.categoryCode || '—'}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-600 font-bold">{product.size || '—'}</td>
@@ -525,50 +536,36 @@ export default function ProductsPage() {
                 <div className="space-y-4">
                   <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Classification</h3>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">Category Name</label>
-                      <input
-                        type="text"
-                        value={form.categoryName}
-                        onChange={(e) => setForm({ ...form, categoryName: e.target.value })}
-                        placeholder="e.g. Dairy"
-                        className="w-full bg-slate-50 border border-slate-100 rounded-[16px] px-4 py-3 text-slate-900 font-bold focus:ring-4 focus:ring-slate-900/5 focus:bg-white transition-all text-sm shadow-inner"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">Category Code</label>
-                      <input
-                        type="text"
-                        value={form.categoryCode}
-                        onChange={(e) => setForm({ ...form, categoryCode: e.target.value })}
-                        placeholder="e.g. DAIRY"
-                        className="w-full bg-slate-50 border border-slate-100 rounded-[16px] px-4 py-3 text-slate-900 font-bold focus:ring-4 focus:ring-slate-900/5 focus:bg-white transition-all text-sm shadow-inner"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">Subcategory Name</label>
-                      <input
-                        type="text"
-                        value={form.subcategoryName}
-                        onChange={(e) => setForm({ ...form, subcategoryName: e.target.value })}
-                        placeholder="e.g. Organic Milk"
-                        className="w-full bg-slate-50 border border-slate-100 rounded-[16px] px-4 py-3 text-slate-900 font-bold focus:ring-4 focus:ring-slate-900/5 focus:bg-white transition-all text-sm shadow-inner"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">Subcategory Code</label>
-                      <input
-                        type="text"
-                        value={form.subcategoryCode}
-                        onChange={(e) => setForm({ ...form, subcategoryCode: e.target.value })}
-                        placeholder="e.g. MILK_ORG"
-                        className="w-full bg-slate-50 border border-slate-100 rounded-[16px] px-4 py-3 text-slate-900 font-bold focus:ring-4 focus:ring-slate-900/5 focus:bg-white transition-all text-sm shadow-inner"
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">Assigned Category</label>
+                    <select
+                      required
+                      value={form.categoryId}
+                      onChange={(e) => {
+                        const selectedCat = categories.find(c => c._id === e.target.value);
+                        if (selectedCat) {
+                          setForm({
+                            ...form,
+                            categoryId: selectedCat._id,
+                            categoryName: selectedCat.name,
+                            categoryCode: selectedCat.code
+                          });
+                        } else {
+                          setForm({
+                            ...form,
+                            categoryId: '',
+                            categoryName: '',
+                            categoryCode: ''
+                          });
+                        }
+                      }}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-[16px] px-4 py-3 text-slate-900 font-bold focus:ring-4 focus:ring-slate-900/5 focus:bg-white transition-all text-sm shadow-inner"
+                    >
+                      <option value="">Select Category</option>
+                      {categories.map((c) => (
+                        <option key={c._id} value={c._id}>{c.name} ({c.code})</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="space-y-2">

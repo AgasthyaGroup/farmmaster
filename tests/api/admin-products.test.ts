@@ -16,8 +16,9 @@ vi.mock('@/app/api/customer-app/models/Product', () => ({
           price: 60,
           quantity: 100,
           status: 'active',
-          category: { name: 'Dairy', code: 'DAIRY' },
-          subcategory: { name: 'Milk', code: 'MILK' },
+          categoryId: 'cat-123',
+          categoryName: 'Dairy',
+          categoryCode: 'DAIRY',
         },
       ]),
     })),
@@ -95,8 +96,9 @@ describe('Admin and Customer Product Catalog API tests', () => {
       price: 150,
       quantity: 50,
       status: 'inactive',
-      category: { name: 'Dairy', code: 'DAIRY' },
-      subcategory: { name: 'Butter', code: 'BUTTER' },
+      categoryId: 'cat-123',
+      categoryName: 'Dairy',
+      categoryCode: 'DAIRY',
     } as any);
 
     const req = new NextRequest('http://localhost/api/admin/products', {
@@ -107,7 +109,9 @@ describe('Admin and Customer Product Catalog API tests', () => {
         sku: 'BUTTER-ORG',
         price: 150,
         quantity: 50,
-        category: { name: 'Dairy', code: 'DAIRY' },
+        categoryId: 'cat-123',
+        categoryName: 'Dairy',
+        categoryCode: 'DAIRY',
       }),
     });
 

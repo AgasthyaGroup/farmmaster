@@ -1,15 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
 
-const CategorySchema = new Schema({
-  name: { type: String, required: true },
-  code: { type: String, required: true },
-});
-
-const SubcategorySchema = new Schema({
-  name: { type: String, required: true },
-  code: { type: String, required: true },
-});
-
 const ProductSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -21,8 +11,9 @@ const ProductSchema = new Schema(
     description: { type: String, default: '' },
     benefits: { type: [String], default: [] },
     status: { type: String, default: 'inactive' },
-    category: { type: CategorySchema, required: true },
-    subcategory: { type: SubcategorySchema, required: true },
+    categoryId: { type: Schema.Types.ObjectId, ref: 'Category', required: true },
+    categoryName: { type: String, required: true },
+    categoryCode: { type: String, required: true },
   },
   { timestamps: true }
 );
