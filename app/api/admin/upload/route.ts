@@ -17,18 +17,26 @@ export async function POST(req: NextRequest) {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      // Create uploads folder inside public directory
-      const uploadDir = join(process.cwd(), 'public', 'uploads');
-      await mkdir(uploadDir, { recursive: true });
+      try {
+        // Create uploads folder inside public directory
+        const uploadDir = join(process.cwd(), 'public', 'uploads');
+        await mkdir(uploadDir, { recursive: true });
 
-      // Generate a unique filename
-      const uniqueName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
-      const filePath = join(uploadDir, uniqueName);
+        // Generate a unique filename
+        const uniqueName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
+        const filePath = join(uploadDir, uniqueName);
 
-      await writeFile(filePath, buffer);
+        await writeFile(filePath, buffer);
 
-      const fileUrl = `/uploads/${uniqueName}`;
-      return successResponse({ url: fileUrl }, 'File uploaded successfully');
+        const fileUrl = `/uploads/${uniqueName}`;
+        return successResponse({ url: fileUrl }, 'File uploaded successfully');
+      } catch (fsError: any) {
+        console.warn('Filesystem write failed, falling back to base64 Data URL:', fsError.message);
+        const base64Data = buffer.toString('base64');
+        const mimeType = file.type || 'image/png';
+        const fileUrl = `data:${mimeType};base64,${base64Data}`;
+        return successResponse({ url: fileUrl }, 'File uploaded successfully (base64 fallback)');
+      }
     } catch (error: any) {
       console.error('[POST /api/admin/upload] error:', error);
       return errorResponse(error.message || 'Internal server error', 500);
