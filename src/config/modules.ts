@@ -28,7 +28,7 @@ export const MODULE_GROUPS: ModuleGroups = {
       { name: 'Land Management', baseToken: 'LAND', prefix: 'LAND_MANAGEMENT', icon: '🗺️', path: '/land-management' },
       { name: 'BMC Management', baseToken: 'BMC', prefix: 'BMC', icon: '❄️', path: '/bmc-management' },
       { name: 'Shed Management', baseToken: 'SHEDS', prefix: 'SHED_MANAGEMENT', icon: '⚙️', path: '/shed-management' },
-      { name: 'Line Management', baseToken: 'SHEDS', prefix: 'SHED_MANAGEMENT', icon: '📏', path: '/line-management' },
+      { name: 'Line Management', baseToken: 'SHEDS', prefix: 'LINE_MANAGEMENT', icon: '📏', path: '/line-management' },
       { name: 'Cattle Management', baseToken: 'CATTLE', prefix: 'CATTLE_MANAGEMENT', icon: '🐄', path: '/cattle-management' },
       { name: 'Health Management', baseToken: 'HEALTH', prefix: 'HEALTH_MANAGEMENT', icon: '🩺', path: '/health-management' },
       { name: 'Feed Items', baseToken: 'INVENTORY', prefix: 'FEED_ITEMS', icon: '🌾', path: '/feed-items' },
@@ -47,16 +47,16 @@ export const MODULE_GROUPS: ModuleGroups = {
       { name: 'Crossing Log', baseToken: 'CROSSING_LOG', prefix: 'CROSSING_LOG', icon: '🧬', path: '/crossing' },
       { name: 'Purchase Log', baseToken: 'PURCHASE_LOG', prefix: 'PURCHASE_LOG', icon: '📥', path: '/purchase' },
       { name: 'Sale Log', baseToken: 'SALE_LOG', prefix: 'SALE_LOG', icon: '📤', path: '/sale' },
-      { name: 'Treatment Log', baseToken: 'HEALTH', prefix: 'HEALTH', icon: '🩺', path: '/treatment' },
-      { name: 'Vaccination Log', baseToken: 'HEALTH', prefix: 'HEALTH', icon: '💉', path: '/vaccination' },
-      { name: 'Feed Inventory', baseToken: 'INVENTORY', prefix: 'INVENTORY', icon: '🌾', path: '/feed-inventory' },
-      { name: 'Medicine Inventory', baseToken: 'INVENTORY', prefix: 'INVENTORY', icon: '💊', path: '/medicine-inventory' },
+      { name: 'Treatment Log', baseToken: 'HEALTH', prefix: 'TREATMENT_LOG', icon: '🩺', path: '/treatment' },
+      { name: 'Vaccination Log', baseToken: 'HEALTH', prefix: 'VACCINATION_LOG', icon: '💉', path: '/vaccination' },
+      { name: 'Feed Inventory', baseToken: 'INVENTORY', prefix: 'FEED_INVENTORY', icon: '🌾', path: '/feed-inventory' },
+      { name: 'Medicine Inventory', baseToken: 'INVENTORY', prefix: 'MEDICINE_INVENTORY', icon: '💊', path: '/medicine-inventory' },
       { name: 'Grass Collection', baseToken: 'GRASS', prefix: 'GRASS', icon: '🌿', path: '/grass' },
       { name: 'Daily Feeding', baseToken: 'FEEDING', prefix: 'FEEDING', icon: '🍽️', path: '/feeding' },
-      { name: 'Daily Milk Collection', baseToken: 'MILK', prefix: 'MILK', icon: '🥛', path: '/milk' },
-      { name: 'Milk QA', baseToken: 'MILK', prefix: 'MILK', icon: '🧪', path: '/milk-quality' },
-      { name: 'Milk Procurement', baseToken: 'MILK', prefix: 'MILK', icon: '🥛', path: '/milk-procurement' },
-      { name: 'Milk Performance', baseToken: 'MILK', prefix: 'MILK_PERFORMANCE', icon: '📈', path: '/milking-performance' }
+      { name: 'Daily Milk Collection', baseToken: 'MILK', prefix: 'MILK_COLLECTION', icon: '🥛', path: '/milk' },
+      { name: 'Milk QA', baseToken: 'MILK', prefix: 'MILK_QA', icon: '🧪', path: '/milk-quality' },
+      { name: 'Milk Procurement', baseToken: 'MILK', prefix: 'MILK_PROCUREMENT', icon: '🥛', path: '/milk-procurement' },
+      { name: 'Milk Performance', baseToken: 'MILK_PERFORMANCE', prefix: 'MILK_PERFORMANCE', icon: '📈', path: '/milking-performance' }
     ]
   }
 };
