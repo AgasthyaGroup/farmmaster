@@ -19,7 +19,7 @@ export interface ModuleGroups {
 
 export const MODULE_GROUPS: ModuleGroups = {
   CORE: {
-    title: 'CORE SETUP MODULES',
+    title: 'Core Modules',
     modules: [
       { name: 'User Management', baseToken: 'USERS', prefix: 'USER_MANAGEMENT', icon: '👥', path: '/users' },
       { name: 'Department', baseToken: 'DEPARTMENTS', prefix: 'DEPARTMENT', icon: '🏢', path: '/department' },
@@ -40,7 +40,7 @@ export const MODULE_GROUPS: ModuleGroups = {
     ]
   },
   MODULES: {
-    title: 'OPERATIONAL LOGS & INVENTORY',
+    title: 'modules',
     modules: [
       { name: 'Live Stock', baseToken: 'CATTLE', prefix: 'LIVESTOCK', icon: '🐄', path: '/animals' },
       { name: 'Shed Log', baseToken: 'SHED_LOG', prefix: 'SHED_LOG', icon: '📝', path: '/shed' },
