@@ -16,7 +16,8 @@ import {
   DollarSign,
   Boxes,
   HelpCircle,
-  Tag
+  Tag,
+  Image as ImageIcon
 } from 'lucide-react';
 
 interface Category {
@@ -74,6 +75,41 @@ export default function ProductsPage() {
   });
 
   const [benefitsInput, setBenefitsInput] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    setModalMessage({ type: '', text: '' });
+
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/admin/upload', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData,
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        setForm(prev => ({ ...prev, image: result.data.url }));
+        setModalMessage({ type: 'success', text: 'Image uploaded successfully' });
+      } else {
+        setModalMessage({ type: 'error', text: result.error || 'Failed to upload image' });
+      }
+    } catch (err: any) {
+      setModalMessage({ type: 'error', text: err.message || 'Error uploading image' });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -536,14 +572,40 @@ export default function ProductsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">Image URL</label>
-                    <input
-                      type="url"
-                      value={form.image}
-                      onChange={(e) => setForm({ ...form, image: e.target.value })}
-                      placeholder="https://example.com/image.jpg"
-                      className="w-full bg-slate-50 border border-slate-100 rounded-[16px] px-4 py-3 text-slate-900 font-bold focus:ring-4 focus:ring-slate-900/5 focus:bg-white transition-all text-sm shadow-inner"
-                    />
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">Product Image</label>
+                    {form.image ? (
+                      <div className="relative w-full h-32 rounded-[16px] overflow-hidden border border-slate-200 bg-slate-50 group">
+                        <img src={form.image} alt="Preview" className="w-full h-full object-contain" />
+                        <button
+                          type="button"
+                          onClick={() => setForm(prev => ({ ...prev, image: '' }))}
+                          className="absolute top-2 right-2 p-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl transition-all shadow-md active:scale-90"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-200 hover:border-slate-400 rounded-[16px] cursor-pointer bg-slate-50 hover:bg-slate-100/50 transition-all">
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          {uploadingImage ? (
+                            <Loader2 className="w-8 h-8 text-slate-500 animate-spin" />
+                          ) : (
+                            <>
+                              <ImageIcon className="w-8 h-8 text-slate-400 mb-2" />
+                              <p className="text-xs text-slate-500 font-bold">Click to upload product image</p>
+                              <p className="text-[9px] text-slate-400">PNG, JPG or WEBP</p>
+                            </>
+                          )}
+                        </div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={uploadingImage}
+                          onChange={handleImageUpload}
+                        />
+                      </label>
+                    )}
                   </div>
                 </div>
 
