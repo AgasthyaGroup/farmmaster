@@ -3,7 +3,7 @@
 import { ReactNode, useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { 
+import {
   LayoutDashboard, 
   Warehouse, 
   Tag, 
@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  ChevronDown,
   Tractor,
   Map,
   Snowflake
@@ -33,7 +34,19 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const sidebarItems = [
+interface SidebarChild {
+  name: string;
+  href: string;
+}
+
+interface SidebarItem {
+  name: string;
+  icon: any;
+  href?: string;
+  children?: SidebarChild[];
+}
+
+const sidebarItems: SidebarItem[] = [
   { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
   { name: 'Farms', icon: Tractor, href: '/farms' },
   { name: 'Sheds', icon: Warehouse, href: '/sheds' },
@@ -43,15 +56,32 @@ const sidebarItems = [
   { name: 'BMC Management', icon: Snowflake, href: '/bmc-management' },
   { name: 'Departments', icon: Building2, href: '/departments' },
   { name: 'User Management', icon: Users, href: '/users' },
-  { name: 'Customers', icon: Users, href: '/customers' },
+  {
+    name: 'Customer App',
+    icon: Users,
+    children: [
+      { name: 'Customers', href: '/customer-app/customers' },
+      { name: 'Favorites', href: '/customer-app/favorites' },
+      { name: 'Orders', href: '/customer-app/orders' },
+      { name: 'Products', href: '/customer-app/products' },
+      { name: 'Categories', href: '/customer-app/categories' },
+    ],
+  },
   { name: 'Role Management', icon: ShieldCheck, href: '/roles' },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (pathname.startsWith('/customer-app')) {
+      setExpandedMenus((prev) => ({ ...prev, 'Customer App': true }));
+    }
+  }, [pathname]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -101,6 +131,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     return true;
   });
 
+  const toggleMenu = (name: string) => {
+    setExpandedMenus((prev) => ({ ...prev, [name]: !prev[name] }));
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex overflow-hidden">
       {/* Sidebar Desktop */}
@@ -118,11 +152,59 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
           <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
             {allowedSidebarItems.map((item) => {
+              if (item.children) {
+                const isExpanded = !!expandedMenus[item.name];
+                const isAnyChildActive = item.children.some((child) => pathname === child.href);
+
+                return (
+                  <div key={item.name} className="space-y-1">
+                    <button
+                      onClick={() => toggleMenu(item.name)}
+                      className={cn(
+                        "flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-200 group relative text-left",
+                        isAnyChildActive
+                          ? "bg-blue-600/5 text-blue-600 font-semibold"
+                          : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                      )}
+                    >
+                      <item.icon className={cn("w-5 h-5", isAnyChildActive ? "text-blue-600" : "group-hover:text-blue-600 transition-colors")} />
+                      <span className="font-semibold text-sm">{item.name}</span>
+                      {isExpanded ? (
+                        <ChevronDown className="w-4 h-4 ml-auto text-slate-400" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4 ml-auto text-slate-400" />
+                      )}
+                    </button>
+                    {isExpanded && (
+                      <div className="pl-6 space-y-1 border-l border-slate-100 ml-6">
+                        {item.children.map((child) => {
+                          const isChildActive = pathname === child.href;
+                          return (
+                            <Link
+                              key={child.href}
+                              href={child.href}
+                              className={cn(
+                                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all duration-150",
+                                isChildActive
+                                  ? "text-blue-600 font-bold bg-blue-50"
+                                  : "text-slate-500 hover:text-slate-900 hover:bg-slate-50/50"
+                              )}
+                            >
+                              <span>{child.name}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
               const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.href}
-                  href={item.href}
+                  href={item.href!}
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative",
                     isActive 

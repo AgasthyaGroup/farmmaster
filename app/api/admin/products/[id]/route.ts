@@ -1,0 +1,87 @@
+import { NextRequest } from 'next/server';
+import dbConnect from '@/src/database/dbConnection';
+import Product from '@/app/api/customer-app/models/Product';
+import { withAuth } from '@/src/utils/authGuard';
+import { successResponse, errorResponse } from '@/src/utils/responses';
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'USERS'], async () => {
+    try {
+      const { id } = await params;
+      await dbConnect();
+      const product = await Product.findById(id);
+      if (!product) {
+        return errorResponse('Product not found', 404);
+      }
+      return successResponse(product, 'Product fetched successfully');
+    } catch (error: any) {
+      console.error('[GET /api/admin/products/[id]] error:', error);
+      return errorResponse(error.message || 'Internal server error', 500);
+    }
+  });
+}
+
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'USERS'], async () => {
+    try {
+      const { id } = await params;
+      let body: any;
+      try {
+        body = await req.json();
+      } catch {
+        return errorResponse('Invalid JSON body', 400);
+      }
+
+      await dbConnect();
+
+      // Check duplicate SKU
+      if (body.sku) {
+        const existing = await Product.findOne({ sku: body.sku, _id: { $ne: id } });
+        if (existing) {
+          return errorResponse('Product SKU already exists', 400);
+        }
+      }
+
+      const updatedProduct = await Product.findByIdAndUpdate(
+        id,
+        { $set: body },
+        { new: true }
+      );
+
+      if (!updatedProduct) {
+        return errorResponse('Product not found', 404);
+      }
+
+      return successResponse(updatedProduct, 'Product updated successfully');
+    } catch (error: any) {
+      console.error('[PUT /api/admin/products/[id]] error:', error);
+      return errorResponse(error.message || 'Internal server error', 500);
+    }
+  });
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'USERS'], async () => {
+    try {
+      const { id } = await params;
+      await dbConnect();
+      const deletedProduct = await Product.findByIdAndDelete(id);
+      if (!deletedProduct) {
+        return errorResponse('Product not found', 404);
+      }
+      return successResponse(null, 'Product deleted successfully');
+    } catch (error: any) {
+      console.error('[DELETE /api/admin/products/[id]] error:', error);
+      return errorResponse(error.message || 'Internal server error', 500);
+    }
+  });
+}
