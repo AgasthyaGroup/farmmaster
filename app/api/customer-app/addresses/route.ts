@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import dbConnect from '@/src/database/dbConnection';
 import Customer from '../models/Customer';
 import Address from '../models/Address';
@@ -33,11 +34,26 @@ export async function GET(req: NextRequest) {
       return unauthorizedResponse('Invalid or expired token');
     }
 
+    const customerIdStr = customer._id.toString();
+    const customerPhone = customer.phone ? String(customer.phone).trim() : '';
+
+    let customerIdObj = customer._id;
+    if (typeof customerIdObj === 'string' && mongoose.Types.ObjectId.isValid(customerIdObj)) {
+      customerIdObj = new mongoose.Types.ObjectId(customerIdObj);
+    }
+
+    const queryConditions: any[] = [
+      { customerId: customerIdStr },
+      { customerId: customerIdObj },
+      { customerId: customer._id }
+    ];
+
+    if (customerPhone.length > 0) {
+      queryConditions.push({ phone: customerPhone });
+    }
+
     const addressList = await Address.find({
-      $or: [
-        { customerId: customer._id },
-        { customerId: customer._id.toString() }
-      ],
+      $or: queryConditions,
       isDeleted: { $ne: true }
     }).sort({ createdAt: -1 });
 
@@ -107,7 +123,7 @@ export async function POST(req: NextRequest) {
     const fullName = body?.fullName ? String(body.fullName).trim() : '';
     const label = body?.label ? String(body.label).trim() : '';
     const phoneVal = body?.phone !== undefined ? body.phone : body?.mobile;
-    const phone = phoneVal !== undefined ? String(phoneVal).trim() : '';
+    const phone = phoneVal !== undefined ? String(phoneVal).trim() : customer.phone;
     const addressLine1 = body?.addressLine1 ? String(body.addressLine1).trim() : '';
     const addressLine2 = body?.addressLine2 ? String(body.addressLine2).trim() : '';
     const city = body?.city ? String(body.city).trim() : '';
