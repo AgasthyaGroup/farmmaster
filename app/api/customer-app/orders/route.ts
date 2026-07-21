@@ -34,7 +34,23 @@ export async function GET(req: NextRequest) {
 
     const ordersList = await Order.find({ customerId: customer._id }).sort({ createdAt: -1 });
 
-    return NextResponse.json(ordersList);
+    const formattedOrders = ordersList.map((order: any) => {
+      const obj = order.toObject();
+      const computedTotal = (obj.items || []).reduce(
+        (sum: number, item: any) => sum + (Number(item.price || 0) * Number(item.quantity || 1)),
+        0
+      );
+
+      return {
+        ...obj,
+        totalPrice:
+          obj.totalPrice !== undefined && obj.totalPrice !== null && obj.totalPrice > 0
+            ? obj.totalPrice
+            : computedTotal,
+      };
+    });
+
+    return NextResponse.json(formattedOrders);
   } catch (error: any) {
     console.error('[GET /api/customer-app/orders] error:', error);
     return errorResponse(error.message || 'Internal server error', 500);
@@ -55,15 +71,24 @@ export async function POST(req: NextRequest) {
       return errorResponse('Invalid JSON body', 400);
     }
 
-    const { orderNumber, status, items } = body;
+    const { orderNumber, status, items, totalPrice } = body;
     if (!orderNumber || !items || !Array.isArray(items) || items.length === 0) {
       return errorResponse('Missing required fields or items', 400);
     }
+
+    const calculatedTotal =
+      totalPrice !== undefined && totalPrice !== null
+        ? Number(totalPrice)
+        : items.reduce(
+            (sum: number, item: any) => sum + (Number(item.price || 0) * Number(item.quantity || 1)),
+            0
+          );
 
     const newOrder = await Order.create({
       customerId: customer._id,
       orderNumber,
       status: status || 'pending',
+      totalPrice: calculatedTotal,
       items,
     });
 

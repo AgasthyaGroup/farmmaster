@@ -12,6 +12,7 @@ const OrderSchema = new Schema(
     customerId: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },
     orderNumber: { type: String, required: true, unique: true },
     status: { type: String, default: 'pending' },
+    totalPrice: { type: Number, default: 0 },
     items: [OrderItemSchema],
   },
   { timestamps: true }
