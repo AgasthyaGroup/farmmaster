@@ -104,11 +104,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           
           await LiveStockModel.findOneAndUpdate(
             { tag_id: motherTag },
-            { calvings: newCalvings, animalType: nextType, lineNo: 0, position: 0 }
+            { calvings: newCalvings, animalType: nextType }
           );
           await CattleModel.findOneAndUpdate(
             { tag: motherTag },
-            { calvings: newCalvings, cattleType: nextType, lineNo: 0, position: 0 }
+            { calvings: newCalvings, cattleType: nextType }
           );
           console.log(`[PUT /api/crossing/[id]] Auto-transitioned and incremented calvings for mother: ${motherTag}`);
         } else {

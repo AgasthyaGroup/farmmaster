@@ -202,11 +202,11 @@ export async function POST(req: NextRequest) {
           
           await LiveStockModel.findOneAndUpdate(
             { tag_id: cleanTag },
-            { calvings: newCalvings, animalType: nextType, lineNo: 0, position: 0 }
+            { calvings: newCalvings, animalType: nextType }
           );
           await CattleModel.findOneAndUpdate(
             { tag: cleanTag },
-            { calvings: newCalvings, cattleType: nextType, lineNo: 0, position: 0 }
+            { calvings: newCalvings, cattleType: nextType }
           );
           console.log(`[POST /api/crossing] Auto-transitioned and incremented calvings for mother: ${cleanTag}`);
         } else {

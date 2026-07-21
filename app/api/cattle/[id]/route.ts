@@ -57,27 +57,21 @@ export async function PUT(
           }
         }
       }
+      // Check if shedId, lineNo, or position changed
       const oldShed = String(record.shedId || record.shed || '').trim();
       const newShed = String(body.shedId || body.shed || '').trim();
       const oldLineNo = Number(record.lineNo) || 0;
+      const newLineNo = Number(body.lineNo) || 0;
       const oldPosition = Number(record.position) || 0;
+      const newPosition = Number(body.position) || 0;
 
       const shedChanged = oldShed.toUpperCase() !== newShed.toUpperCase();
-
-      const oldType = String(record.cattleType || record.animalType || '').trim().toUpperCase();
-      const newType = String(body.cattleType || body.animalType || '').trim().toUpperCase();
-      const isBuffaloCalfToBuffalo = oldType === 'BUFFALO CALF' && newType === 'BUFFALO';
-
-      if (shedChanged || isBuffaloCalfToBuffalo) {
+      if (shedChanged && body.lineNo === undefined) {
         body.lineNo = 0;
         body.position = 0;
       }
-
-      const newLineNo = Number(body.lineNo) || 0;
-      const newPosition = Number(body.position) || 0;
-
-      const lineChanged = oldLineNo !== newLineNo;
-      const positionChanged = oldPosition !== newPosition;
+      const lineChanged = oldLineNo !== Number(body.lineNo || 0);
+      const positionChanged = oldPosition !== Number(body.position || 0);
 
       if (shedChanged || lineChanged || positionChanged) {
         try {
