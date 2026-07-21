@@ -33,12 +33,24 @@ export async function GET(req: NextRequest) {
       return unauthorizedResponse('Invalid or expired token');
     }
 
-    const addresses = await Address.find({ customerId: customer._id, isDeleted: false }).sort({ createdAt: -1 });
+    const addressList = await Address.find({
+      $or: [
+        { customerId: customer._id },
+        { customerId: customer._id.toString() }
+      ],
+      isDeleted: { $ne: true }
+    }).sort({ createdAt: -1 });
+
+    let finalAddresses: any[] = addressList;
+    if (finalAddresses.length === 0 && customer.addresses && Array.isArray(customer.addresses) && customer.addresses.length > 0) {
+      finalAddresses = customer.addresses;
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Addresses retrieved successfully',
-      data: addresses,
-      addresses: addresses,
+      data: finalAddresses,
+      addresses: finalAddresses,
     });
   } catch (error: any) {
     console.error('[GET /api/customer-app/addresses] error:', error);
