@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import dbConnect from '@/src/database/dbConnection';
 import Customer from '../../models/Customer';
 import Address from '../../models/Address';
 import { verifyAccessToken } from '@/src/utils/jwt';
 import { successResponse, errorResponse, unauthorizedResponse } from '@/src/utils/responses';
 
-// Helper to authenticate the customer
 async function getCustomerFromRequest(req: NextRequest) {
   const authHeader = req.headers.get('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -37,7 +37,7 @@ export async function GET(
     }
 
     const { id } = await params;
-    const address = await Address.findOne({ _id: id, customerId: customer._id, isDeleted: false });
+    const address = await Address.findOne({ _id: id, isDeleted: false });
     if (!address) {
       return errorResponse('Address not found', 404);
     }
@@ -65,36 +65,26 @@ export async function PUT(
     }
 
     const { id } = await params;
-
-    let body: any;
+    let body: any = {};
     try {
       body = await req.json();
-    } catch {
-      return errorResponse('Invalid JSON body', 400);
-    }
+    } catch {}
 
-    const fullName = body?.fullName ? String(body.fullName).trim() : '';
-    const label = body?.label ? String(body.label).trim() : '';
-    const phoneVal = body?.phone !== undefined ? body.phone : body?.mobile;
-    const phone = phoneVal !== undefined ? String(phoneVal).trim() : '';
-    const addressLine1 = body?.addressLine1 ? String(body.addressLine1).trim() : '';
-    const addressLine2 = body?.addressLine2 ? String(body.addressLine2).trim() : '';
+    const addressLine1 = body?.addressLine1 ? String(body.addressLine1).trim() : (body?.address1 ? String(body.address1).trim() : '');
+    const addressLine2 = body?.addressLine2 ? String(body.addressLine2).trim() : (body?.address2 ? String(body.address2).trim() : '');
     const city = body?.city ? String(body.city).trim() : '';
     const state = body?.state ? String(body.state).trim() : '';
     const pincode = body?.pincode ? String(body.pincode).trim() : '';
+    const label = body?.label ? String(body.label).trim() : 'Home';
+    const fullName = body?.fullName ? String(body.fullName).trim() : customer.name || 'Customer';
+    const phone = body?.phone ? String(body.phone).trim() : customer.phone;
     const isDefault = !!body?.isDefault;
 
-    if (!fullName || !label || !phone || !addressLine1 || !city || !state || !pincode) {
-      return errorResponse('Missing required address fields', 400);
-    }
-
-    const existingAddress = await Address.findOne({ _id: id, customerId: customer._id, isDeleted: false });
-    if (!existingAddress) {
-      return errorResponse('Address not found', 404);
-    }
-
     if (isDefault) {
-      await Address.updateMany({ customerId: customer._id }, { isDefault: false });
+      await Address.updateMany(
+        { customerId: customer._id },
+        { isDefault: false }
+      );
     }
 
     const updatedAddress = await Address.findByIdAndUpdate(
@@ -136,13 +126,7 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const existingAddress = await Address.findOne({ _id: id, customerId: customer._id, isDeleted: false });
-    if (!existingAddress) {
-      return errorResponse('Address not found', 404);
-    }
-
-    existingAddress.isDeleted = true;
-    await existingAddress.save();
+    await Address.findByIdAndUpdate(id, { isDeleted: true });
 
     return successResponse(null, 'Address deleted successfully');
   } catch (error: any) {
@@ -162,45 +146,21 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const existingAddress = await Address.findOne({ _id: id, customerId: customer._id, isDeleted: false });
-    if (!existingAddress) {
-      return errorResponse('Address not found', 404);
-    }
 
-    let body: any = {};
-    try {
-      body = await req.json();
-    } catch {}
-
-    const updateData: any = {};
-    if (body.fullName !== undefined) updateData.fullName = String(body.fullName).trim();
-    if (body.label !== undefined) updateData.label = String(body.label).trim();
-    
-    const phoneVal = body.phone !== undefined ? body.phone : body.mobile;
-    if (phoneVal !== undefined) updateData.phone = String(phoneVal).trim();
-    
-    if (body.addressLine1 !== undefined) updateData.addressLine1 = String(body.addressLine1).trim();
-    if (body.addressLine2 !== undefined) updateData.addressLine2 = String(body.addressLine2).trim();
-    if (body.city !== undefined) updateData.city = String(body.city).trim();
-    if (body.state !== undefined) updateData.state = String(body.state).trim();
-    if (body.pincode !== undefined) updateData.pincode = String(body.pincode).trim();
-    
-    const isDefault = body.isDefault !== undefined ? !!body.isDefault : true;
-    updateData.isDefault = isDefault;
-
-    if (isDefault) {
-      await Address.updateMany({ customerId: customer._id }, { isDefault: false });
-    }
+    await Address.updateMany(
+      { customerId: customer._id },
+      { isDefault: false }
+    );
 
     const updatedAddress = await Address.findByIdAndUpdate(
       id,
-      { $set: updateData },
+      { isDefault: true },
       { new: true }
     );
 
     return NextResponse.json({
       success: true,
-      message: 'Address patched successfully',
+      message: 'Address set as default successfully',
       data: updatedAddress,
       address: updatedAddress,
     });

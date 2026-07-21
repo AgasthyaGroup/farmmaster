@@ -6,7 +6,7 @@ import Address from '../models/Address';
 import { verifyAccessToken } from '@/src/utils/jwt';
 import { successResponse, errorResponse, createdResponse, unauthorizedResponse } from '@/src/utils/responses';
 
-// Helper to authenticate the customer
+// Authenticate customer helper
 async function getCustomerFromRequest(req: NextRequest) {
   const authHeader = req.headers.get('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -27,6 +27,7 @@ async function getCustomerFromRequest(req: NextRequest) {
   return customer;
 }
 
+/// 📍 GET ALL ADDRESSES FOR CUSTOMER
 export async function GET(req: NextRequest) {
   try {
     const customer = await getCustomerFromRequest(req);
@@ -50,6 +51,10 @@ export async function GET(req: NextRequest) {
 
     if (customerPhone.length > 0) {
       queryConditions.push({ phone: customerPhone });
+      const digitsOnly = customerPhone.replace(/\D/g, '');
+      if (digitsOnly.length >= 6) {
+        queryConditions.push({ phone: { $regex: new RegExp(digitsOnly.slice(-10)) } });
+      }
     }
 
     const addressList = await Address.find({
@@ -57,18 +62,26 @@ export async function GET(req: NextRequest) {
       isDeleted: { $ne: true }
     }).sort({ createdAt: -1 });
 
-    let finalAddresses: any[] = [...addressList];
+    const finalAddresses: any[] = [];
 
-    // 1. Check if customer document has embedded addresses array
-    if ((customer as any).addresses && Array.isArray((customer as any).addresses) && (customer as any).addresses.length > 0) {
-      for (const embeddedAddr of (customer as any).addresses) {
-        if (!finalAddresses.some((a: any) => a._id?.toString() === embeddedAddr._id?.toString())) {
-          finalAddresses.push(embeddedAddr);
-        }
-      }
+    // Add items from Address collection
+    for (const addr of addressList) {
+      const obj = addr.toObject ? addr.toObject() : addr;
+      finalAddresses.push({
+        _id: obj._id ? obj._id.toString() : obj.id,
+        label: obj.label || 'Home',
+        fullName: obj.fullName || customer.name || 'Customer',
+        phone: obj.phone || customer.phone || '',
+        addressLine1: obj.addressLine1 || obj.address1 || '',
+        addressLine2: obj.addressLine2 || obj.address2 || '',
+        city: obj.city || '',
+        state: obj.state || '',
+        pincode: obj.pincode || '',
+        isDefault: !!obj.isDefault,
+      });
     }
 
-    // 2. Check if customer has direct address fields on customer model (address1, address2, city, state, pincode)
+    // Include direct address from Customer model if no matching address in collection
     if (customer.address1 || customer.city || customer.pincode) {
       const directAddr = {
         _id: customer._id.toString(),
@@ -84,13 +97,21 @@ export async function GET(req: NextRequest) {
       };
 
       const exists = finalAddresses.some((a: any) => 
-        (a.addressLine1 || a.address1 || '').trim().toLowerCase() === (customer.address1 || '').trim().toLowerCase() &&
+        (a.addressLine1 || '').trim().toLowerCase() === (customer.address1 || '').trim().toLowerCase() &&
         (a.city || '').trim().toLowerCase() === (customer.city || '').trim().toLowerCase() &&
         (a.pincode || '').trim() === (customer.pincode || '').trim()
       );
 
       if (!exists) {
         finalAddresses.unshift(directAddr);
+      }
+    }
+
+    // Ensure at least one address is marked as default
+    if (finalAddresses.length > 0) {
+      const hasDefault = finalAddresses.some((a: any) => a.isDefault === true);
+      if (!hasDefault) {
+        finalAddresses[0].isDefault = true;
       }
     }
 
@@ -106,6 +127,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
+/// ➕ CREATE ADDRESS
 export async function POST(req: NextRequest) {
   try {
     const customer = await getCustomerFromRequest(req);
@@ -120,24 +142,32 @@ export async function POST(req: NextRequest) {
       return errorResponse('Invalid JSON body', 400);
     }
 
-    const fullName = body?.fullName ? String(body.fullName).trim() : '';
-    const label = body?.label ? String(body.label).trim() : '';
+    const fullName = body?.fullName ? String(body.fullName).trim() : customer.name || 'Customer';
+    const label = body?.label ? String(body.label).trim() : 'Home';
     const phoneVal = body?.phone !== undefined ? body.phone : body?.mobile;
     const phone = phoneVal !== undefined ? String(phoneVal).trim() : customer.phone;
-    const addressLine1 = body?.addressLine1 ? String(body.addressLine1).trim() : '';
-    const addressLine2 = body?.addressLine2 ? String(body.addressLine2).trim() : '';
+    const addressLine1 = body?.addressLine1 ? String(body.addressLine1).trim() : (body?.address1 ? String(body.address1).trim() : '');
+    const addressLine2 = body?.addressLine2 ? String(body.addressLine2).trim() : (body?.address2 ? String(body.address2).trim() : '');
     const city = body?.city ? String(body.city).trim() : '';
     const state = body?.state ? String(body.state).trim() : '';
     const pincode = body?.pincode ? String(body.pincode).trim() : '';
-    const isDefault = !!body?.isDefault;
+    const isDefault = body?.isDefault !== undefined ? !!body.isDefault : true;
 
-    if (!fullName || !label || !phone || !addressLine1 || !city || !state || !pincode) {
-      return errorResponse('Missing required address fields', 400);
+    if (!addressLine1 || !city || !pincode) {
+      return errorResponse('Missing required address fields (addressLine1, city, pincode)', 400);
     }
 
-    // If this is set as default address, reset other default addresses for this customer
     if (isDefault) {
-      await Address.updateMany({ customerId: customer._id }, { isDefault: false });
+      await Address.updateMany(
+        { 
+          $or: [
+            { customerId: customer._id },
+            { customerId: customer._id.toString() },
+            { phone: customer.phone }
+          ]
+        },
+        { isDefault: false }
+      );
     }
 
     const address = await Address.create({
@@ -154,7 +184,7 @@ export async function POST(req: NextRequest) {
       isDeleted: false,
     });
 
-    // Sync direct customer address fields as well
+    // Sync Customer model fields
     customer.address1 = addressLine1;
     customer.address2 = addressLine2;
     customer.city = city;
