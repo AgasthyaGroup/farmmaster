@@ -12,13 +12,13 @@ async function getCustomerFromRequest(req: NextRequest) {
   }
   const token = authHeader.split(' ')[1];
   const payload = verifyAccessToken(token);
-  if (!payload || payload.role !== 'CUSTOMER') {
+  if (!payload || !payload.userId) {
     return null;
   }
   
   await dbConnect();
-  const customer = await Customer.findOne({ _id: payload.userId, isDeleted: false });
-  if (!customer || customer.status === false) {
+  const customer = await Customer.findById(payload.userId);
+  if (!customer || customer.isDeleted === true || customer.status === false) {
     return null;
   }
   
