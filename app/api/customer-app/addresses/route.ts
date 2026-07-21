@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
 
     // Add items from Address collection
     for (const addr of addressList) {
-      const obj = addr.toObject ? addr.toObject() : addr;
+      const obj: any = addr.toObject ? addr.toObject() : addr;
       finalAddresses.push({
         _id: obj._id ? obj._id.toString() : obj.id,
         label: obj.label || 'Home',
