@@ -198,12 +198,12 @@ export async function POST(
           try {
             await LiveStock.findOneAndUpdate(
               { tag_id: cleanTag, isDeleted: false },
-              { shedId: body.newShed }
+              { shedId: body.newShed, lineNo: 0, position: 0 }
             );
             const CattleModel = mongoose.models.Cattle || mongoose.model('Cattle');
             await CattleModel.findOneAndUpdate(
               { tag: cleanTag, isDeleted: false },
-              { shed: body.newShed }
+              { shed: body.newShed, lineNo: 0, position: 0 }
             );
           } catch (syncErr) {
             console.error('Non-blocking livestock shed sync error during creation:', syncErr);
