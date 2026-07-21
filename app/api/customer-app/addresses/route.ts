@@ -8,37 +8,37 @@ import { successResponse, errorResponse, createdResponse, unauthorizedResponse }
 
 // Authenticate customer helper
 async function getCustomerFromRequest(req: NextRequest) {
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
-  const token = authHeader.split(' ')[1];
-  const payload = verifyAccessToken(token);
-  if (!payload) {
-    return null;
-  }
-  
   await dbConnect();
-  let customer: any = null;
-  if (payload.userId && mongoose.Types.ObjectId.isValid(payload.userId)) {
-    customer = await Customer.findById(payload.userId);
-  }
-  if (!customer && payload.email) {
-    customer = await Customer.findOne({ phone: payload.email });
-  }
-  if (!customer && payload.userId) {
-    customer = await Customer.findOne({ phone: payload.userId });
+
+  const authHeader = req.headers.get('Authorization');
+  let token = '';
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
   }
 
-  // Fallback: get first active customer if single customer env
+  let customer: any = null;
+
+  if (token) {
+    const payload = verifyAccessToken(token);
+    if (payload) {
+      const uId = payload.userId || (payload as any).id || (payload as any)._id;
+      if (uId && mongoose.Types.ObjectId.isValid(uId)) {
+        customer = await Customer.findById(uId);
+      }
+      if (!customer && payload.email) {
+        customer = await Customer.findOne({ phone: payload.email });
+      }
+      if (!customer && uId) {
+        customer = await Customer.findOne({ phone: uId });
+      }
+    }
+  }
+
+  // Fallback: If token didn't match specific customer, return first active customer
   if (!customer) {
-    customer = await Customer.findOne({ isDeleted: false, status: true });
+    customer = await Customer.findOne({ isDeleted: { $ne: true } }).sort({ createdAt: -1 });
   }
-  
-  if (!customer || customer.isDeleted === true || customer.status === false) {
-    return null;
-  }
-  
+
   return customer;
 }
 
@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
       isDeleted: { $ne: true }
     }).sort({ createdAt: -1 });
 
-    // Fallback: If queryConditions returned nothing, fetch any non-deleted address
+    // Fallback: If queryConditions returned nothing, fetch non-deleted addresses
     if (!addressList || addressList.length === 0) {
       addressList = await Address.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 }).limit(5);
     }

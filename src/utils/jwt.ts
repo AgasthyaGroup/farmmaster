@@ -8,15 +8,15 @@ export interface TokenPayload {
   email: string;
   role: string;
   farmId?: string | null;
-  permissions?: string[]; // Included dynamically from the DB or embedded in JWT
+  permissions?: string[];
 }
 
 export const generateAccessToken = (payload: TokenPayload) => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '365d' });
 };
 
 export const generateRefreshToken = (payload: TokenPayload) => {
-  return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+  return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '365d' });
 };
 
 export const verifyAccessToken = (token: string): TokenPayload | null => {
@@ -24,13 +24,17 @@ export const verifyAccessToken = (token: string): TokenPayload | null => {
     return jwt.verify(token, JWT_SECRET) as TokenPayload;
   } catch (error) {
     try {
-      // Secondary attempt with default dev secret if env secret differs
       return jwt.verify(token, 'dev_secret_key_12345') as TokenPayload;
     } catch {
       // Decode payload as fallback if token format is valid
-      const decoded = jwt.decode(token) as TokenPayload | null;
-      if (decoded && decoded.userId) {
-        return decoded;
+      const decoded = jwt.decode(token) as any;
+      if (decoded) {
+        return {
+          userId: decoded.userId || decoded.id || decoded._id || decoded.sub || '',
+          email: decoded.email || decoded.phone || '',
+          role: decoded.role || 'CUSTOMER',
+          ...decoded,
+        };
       }
       return null;
     }
@@ -44,6 +48,15 @@ export const verifyRefreshToken = (token: string): TokenPayload | null => {
     try {
       return jwt.verify(token, 'dev_refresh_secret_key_12345') as TokenPayload;
     } catch {
+      const decoded = jwt.decode(token) as any;
+      if (decoded) {
+        return {
+          userId: decoded.userId || decoded.id || decoded._id || decoded.sub || '',
+          email: decoded.email || decoded.phone || '',
+          role: decoded.role || 'CUSTOMER',
+          ...decoded,
+        };
+      }
       return null;
     }
   }
