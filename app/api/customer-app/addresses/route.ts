@@ -36,7 +36,7 @@ async function getCustomerFromRequest(req: NextRequest) {
 
   // Fallback: If token didn't match specific customer, return first active customer
   if (!customer) {
-    customer = await Customer.findOne({ isDeleted: { $ne: true } }).sort({ createdAt: -1 });
+    customer = await Customer.findOne({ isDeleted: { $ne: true } });
   }
 
   return customer;
