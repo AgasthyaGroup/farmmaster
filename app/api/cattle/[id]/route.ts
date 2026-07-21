@@ -57,37 +57,44 @@ export async function PUT(
           }
         }
       }
-      // Check if shedId, lineNo, or position changed
+      // Check if shedId changed
       const oldShed = String(record.shedId || record.shed || '').trim();
       const newShed = String(body.shedId || body.shed || '').trim();
-      const oldLineNo = Number(record.lineNo) || 0;
-      const newLineNo = Number(body.lineNo) || 0;
-      const oldPosition = Number(record.position) || 0;
-      const newPosition = Number(body.position) || 0;
 
-      const shedChanged = oldShed.toUpperCase() !== newShed.toUpperCase();
+      const shedChanged = !!newShed && newShed !== '-' && oldShed.toUpperCase() !== newShed.toUpperCase();
       if (shedChanged && body.lineNo === undefined) {
         body.lineNo = 0;
         body.position = 0;
       }
-      const lineChanged = oldLineNo !== Number(body.lineNo || 0);
-      const positionChanged = oldPosition !== Number(body.position || 0);
 
-      if (shedChanged || lineChanged || positionChanged) {
+      // Create a ShedLog only if the shed actually changed and skipShedLog is false
+      if (shedChanged && !body.skipShedLog) {
         try {
           const { ShedLog } = await import('@/src/models/Logs');
-          await ShedLog.create({
-            tag_id: record.tag_id,
-            shiftingDate: body.shiftingDate ? new Date(body.shiftingDate) : new Date(),
-            oldShed: oldShed || '-',
+          const cleanTag = String(record.tag_id || record.tag || '').trim().toUpperCase();
+
+          // Deduplication check: do not create another log if a ShedLog for this animal and newShed was created in the last 30s
+          const thirtySecondsAgo = new Date(Date.now() - 30 * 1000);
+          const recentLog = await ShedLog.findOne({
+            tag_id: cleanTag,
             newShed: newShed || '-',
-            oldLineNo,
-            newLineNo,
-            oldPosition,
-            newPosition,
-            reason: body.shiftingReason || body.reason || 'Shifted via Cattle Update / Line Management',
-            farmId: record.farmId,
+            createdAt: { $gte: thirtySecondsAgo }
           });
+
+          if (!recentLog) {
+            await ShedLog.create({
+              tag_id: cleanTag,
+              shiftingDate: body.shiftingDate ? new Date(body.shiftingDate) : new Date(),
+              oldShed: oldShed || '-',
+              newShed: newShed || '-',
+              oldLineNo: Number(record.lineNo) || 0,
+              newLineNo: Number(body.lineNo) || 0,
+              oldPosition: Number(record.position) || 0,
+              newPosition: Number(body.position) || 0,
+              reason: body.shiftingReason || body.reason || 'Shifted via Cattle Update',
+              farmId: record.farmId,
+            });
+          }
         } catch (logErr) {
           console.error('Non-blocking shed log creation error:', logErr);
         }
