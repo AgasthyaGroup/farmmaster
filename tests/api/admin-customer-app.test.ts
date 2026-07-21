@@ -44,6 +44,31 @@ vi.mock('@/app/api/customer-app/models/Favourite', () => ({
   },
 }));
 
+vi.mock('@/app/api/customer-app/models/Cart', () => ({
+  default: {
+    find: vi.fn(() => ({
+      populate: vi.fn(() => ({
+        sort: vi.fn().mockResolvedValue([
+          {
+            _id: 'cart-1',
+            items: [{ productId: 'prod-milk', quantity: 2, price: 50 }],
+            customerId: { _id: 'cust-1', name: 'Jaswanth' },
+          },
+        ]),
+      })),
+    })),
+    findOneAndDelete: vi.fn().mockResolvedValue({ _id: 'cart-1' }),
+  },
+}));
+
+vi.mock('@/app/api/customer-app/models/Product', () => ({
+  default: {
+    find: vi.fn().mockResolvedValue([
+      { _id: 'prod-milk', name: 'Fresh Milk', price: 50 },
+    ]),
+  },
+}));
+
 vi.mock('@/src/utils/jwt', () => ({
   verifyAccessToken: vi.fn((token: string) => {
     if (token === 'admin-token') {
@@ -83,6 +108,8 @@ import Favourite from '@/app/api/customer-app/models/Favourite';
 import { GET as getOrders } from '@/app/api/admin/orders/route';
 import { PUT as putOrder } from '@/app/api/admin/orders/[id]/route';
 import { GET as getFavourites } from '@/app/api/admin/favourites/route';
+import { GET as getCarts } from '@/app/api/admin/cart/route';
+import { DELETE as deleteCart } from '@/app/api/admin/cart/[id]/route';
 
 describe('Admin Customer App Management API tests', () => {
   beforeEach(() => {
@@ -136,5 +163,32 @@ describe('Admin Customer App Management API tests', () => {
     expect(body.success).toBe(true);
     expect(body.data[0].productId).toBe('prod-milk');
     expect(body.data[0].customerId.name).toBe('Jaswanth');
+  });
+
+  it('GET /api/admin/cart returns customer carts', async () => {
+    const req = new NextRequest('http://localhost/api/admin/cart', {
+      headers: { 'Authorization': 'Bearer admin-token' },
+    });
+
+    const response = await getCarts(req as any);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data[0].items[0].productId).toBe('prod-milk');
+    expect(body.data[0].customerId.name).toBe('Jaswanth');
+  });
+
+  it('DELETE /api/admin/cart/[id] deletes cart', async () => {
+    const req = new NextRequest('http://localhost/api/admin/cart/cart-1', {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer admin-token' },
+    });
+
+    const response = await deleteCart(req as any, { params: Promise.resolve({ id: 'cart-1' }) });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
   });
 });

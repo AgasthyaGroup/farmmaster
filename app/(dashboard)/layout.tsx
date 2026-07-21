@@ -61,6 +61,7 @@ const sidebarItems: SidebarItem[] = [
     icon: Users,
     children: [
       { name: 'Customers', href: '/customer-app/customers' },
+      { name: 'Carts', href: '/customer-app/cart' },
       { name: 'Favorites', href: '/customer-app/favorites' },
       { name: 'Orders', href: '/customer-app/orders' },
       { name: 'Products', href: '/customer-app/products' },
