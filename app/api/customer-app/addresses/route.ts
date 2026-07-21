@@ -41,9 +41,41 @@ export async function GET(req: NextRequest) {
       isDeleted: { $ne: true }
     }).sort({ createdAt: -1 });
 
-    let finalAddresses: any[] = addressList;
-    if (finalAddresses.length === 0 && customer.addresses && Array.isArray(customer.addresses) && customer.addresses.length > 0) {
-      finalAddresses = customer.addresses;
+    let finalAddresses: any[] = [...addressList];
+
+    // 1. Check if customer document has embedded addresses array
+    if ((customer as any).addresses && Array.isArray((customer as any).addresses) && (customer as any).addresses.length > 0) {
+      for (const embeddedAddr of (customer as any).addresses) {
+        if (!finalAddresses.some((a: any) => a._id?.toString() === embeddedAddr._id?.toString())) {
+          finalAddresses.push(embeddedAddr);
+        }
+      }
+    }
+
+    // 2. Check if customer has direct address fields on customer model (address1, address2, city, state, pincode)
+    if (customer.address1 || customer.city || customer.pincode) {
+      const directAddr = {
+        _id: customer._id.toString(),
+        label: 'Home',
+        fullName: customer.name || 'Customer',
+        phone: customer.phone || '',
+        addressLine1: customer.address1 || '',
+        addressLine2: customer.address2 || '',
+        city: customer.city || '',
+        state: customer.state || '',
+        pincode: customer.pincode || '',
+        isDefault: true,
+      };
+
+      const exists = finalAddresses.some((a: any) => 
+        (a.addressLine1 || a.address1 || '').trim().toLowerCase() === (customer.address1 || '').trim().toLowerCase() &&
+        (a.city || '').trim().toLowerCase() === (customer.city || '').trim().toLowerCase() &&
+        (a.pincode || '').trim() === (customer.pincode || '').trim()
+      );
+
+      if (!exists) {
+        finalAddresses.unshift(directAddr);
+      }
     }
 
     return NextResponse.json({
@@ -106,180 +138,17 @@ export async function POST(req: NextRequest) {
       isDeleted: false,
     });
 
+    // Sync direct customer address fields as well
+    customer.address1 = addressLine1;
+    customer.address2 = addressLine2;
+    customer.city = city;
+    customer.state = state;
+    customer.pincode = pincode;
+    await customer.save();
+
     return createdResponse(address, 'Address created successfully');
   } catch (error: any) {
     console.error('[POST /api/customer-app/addresses] error:', error);
-    return errorResponse(error.message || 'Internal server error', 500);
-  }
-}
-
-export async function PUT(req: NextRequest) {
-  try {
-    const customer = await getCustomerFromRequest(req);
-    if (!customer) {
-      return unauthorizedResponse('Invalid or expired token');
-    }
-
-    const { searchParams } = new URL(req.url);
-    let addressId = searchParams.get('id');
-
-    let body: any;
-    try {
-      body = await req.json();
-    } catch {
-      return errorResponse('Invalid JSON body', 400);
-    }
-
-    if (!addressId) {
-      addressId = body.id;
-    }
-
-    if (!addressId) {
-      return errorResponse('Address ID is required', 400);
-    }
-
-    const fullName = body?.fullName ? String(body.fullName).trim() : '';
-    const label = body?.label ? String(body.label).trim() : '';
-    const phoneVal = body?.phone !== undefined ? body.phone : body?.mobile;
-    const phone = phoneVal !== undefined ? String(phoneVal).trim() : '';
-    const addressLine1 = body?.addressLine1 ? String(body.addressLine1).trim() : '';
-    const addressLine2 = body?.addressLine2 ? String(body.addressLine2).trim() : '';
-    const city = body?.city ? String(body.city).trim() : '';
-    const state = body?.state ? String(body.state).trim() : '';
-    const pincode = body?.pincode ? String(body.pincode).trim() : '';
-    const isDefault = !!body?.isDefault;
-
-    if (!fullName || !label || !phone || !addressLine1 || !city || !state || !pincode) {
-      return errorResponse('Missing required address fields', 400);
-    }
-
-    const existingAddress = await Address.findOne({ _id: addressId, customerId: customer._id, isDeleted: false });
-    if (!existingAddress) {
-      return errorResponse('Address not found', 404);
-    }
-
-    if (isDefault) {
-      await Address.updateMany({ customerId: customer._id }, { isDefault: false });
-    }
-
-    const updatedAddress = await Address.findByIdAndUpdate(
-      addressId,
-      {
-        fullName,
-        label,
-        phone,
-        addressLine1,
-        addressLine2,
-        city,
-        state,
-        pincode,
-        isDefault,
-      },
-      { new: true }
-    );
-
-    return successResponse(updatedAddress, 'Address updated successfully');
-  } catch (error: any) {
-    console.error('[PUT /api/customer-app/addresses] error:', error);
-    return errorResponse(error.message || 'Internal server error', 500);
-  }
-}
-
-export async function PATCH(req: NextRequest) {
-  try {
-    const customer = await getCustomerFromRequest(req);
-    if (!customer) {
-      return unauthorizedResponse('Invalid or expired token');
-    }
-
-    const { searchParams } = new URL(req.url);
-    let addressId = searchParams.get('id');
-
-    let body: any;
-    try {
-      body = await req.json();
-    } catch {
-      return errorResponse('Invalid JSON body', 400);
-    }
-
-    if (!addressId) {
-      addressId = body.id;
-    }
-
-    if (!addressId) {
-      return errorResponse('Address ID is required', 400);
-    }
-
-    const existingAddress = await Address.findOne({ _id: addressId, customerId: customer._id, isDeleted: false });
-    if (!existingAddress) {
-      return errorResponse('Address not found', 404);
-    }
-
-    const updateData: any = {};
-    if (body.fullName !== undefined) updateData.fullName = String(body.fullName).trim();
-    if (body.label !== undefined) updateData.label = String(body.label).trim();
-    
-    const phoneVal = body.phone !== undefined ? body.phone : body.mobile;
-    if (phoneVal !== undefined) updateData.phone = String(phoneVal).trim();
-    
-    if (body.addressLine1 !== undefined) updateData.addressLine1 = String(body.addressLine1).trim();
-    if (body.addressLine2 !== undefined) updateData.addressLine2 = String(body.addressLine2).trim();
-    if (body.city !== undefined) updateData.city = String(body.city).trim();
-    if (body.state !== undefined) updateData.state = String(body.state).trim();
-    if (body.pincode !== undefined) updateData.pincode = String(body.pincode).trim();
-    
-    if (body.isDefault !== undefined) {
-      updateData.isDefault = !!body.isDefault;
-      if (updateData.isDefault) {
-        await Address.updateMany({ customerId: customer._id }, { isDefault: false });
-      }
-    }
-
-    const updatedAddress = await Address.findByIdAndUpdate(
-      addressId,
-      { $set: updateData },
-      { new: true }
-    );
-
-    return successResponse(updatedAddress, 'Address patched successfully');
-  } catch (error: any) {
-    console.error('[PATCH /api/customer-app/addresses] error:', error);
-    return errorResponse(error.message || 'Internal server error', 500);
-  }
-}
-
-export async function DELETE(req: NextRequest) {
-  try {
-    const customer = await getCustomerFromRequest(req);
-    if (!customer) {
-      return unauthorizedResponse('Invalid or expired token');
-    }
-
-    const { searchParams } = new URL(req.url);
-    let addressId = searchParams.get('id');
-
-    if (!addressId) {
-      try {
-        const body = await req.json();
-        addressId = body?.id;
-      } catch {}
-    }
-
-    if (!addressId) {
-      return errorResponse('Address ID is required', 400);
-    }
-
-    const existingAddress = await Address.findOne({ _id: addressId, customerId: customer._id, isDeleted: false });
-    if (!existingAddress) {
-      return errorResponse('Address not found', 404);
-    }
-
-    existingAddress.isDeleted = true;
-    await existingAddress.save();
-
-    return successResponse(null, 'Address deleted successfully');
-  } catch (error: any) {
-    console.error('[DELETE /api/customer-app/addresses] error:', error);
     return errorResponse(error.message || 'Internal server error', 500);
   }
 }
