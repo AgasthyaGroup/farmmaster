@@ -30,6 +30,15 @@ vi.mock('@/app/api/customer-app/models/Product', () => ({
   },
 }));
 
+vi.mock('@/app/api/customer-app/models/ProductInventory', () => ({
+  default: {
+    findOne: vi.fn().mockResolvedValue({ quantity: 100 }),
+    create: vi.fn().mockResolvedValue({ quantity: 100 }),
+    findOneAndUpdate: vi.fn(),
+    deleteOne: vi.fn(),
+  },
+}));
+
 vi.mock('@/src/utils/jwt', () => ({
   verifyAccessToken: vi.fn((token: string) => {
     if (token === 'admin-token') {

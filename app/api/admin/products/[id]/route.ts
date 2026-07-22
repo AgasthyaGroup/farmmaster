@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import dbConnect from '@/src/database/dbConnection';
 import Product from '@/app/api/customer-app/models/Product';
+import ProductInventory from '@/app/api/customer-app/models/ProductInventory';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse } from '@/src/utils/responses';
 
@@ -16,7 +17,15 @@ export async function GET(
       if (!product) {
         return errorResponse('Product not found', 404);
       }
-      return successResponse(product, 'Product fetched successfully');
+      
+      const obj = typeof product.toObject === 'function' ? product.toObject() : product;
+      let inv = await ProductInventory.findOne({ productId: product._id });
+      if (!inv) {
+        inv = await ProductInventory.create({ productId: product._id, quantity: product.quantity || 0 });
+      }
+      obj.quantity = inv.quantity;
+
+      return successResponse(obj, 'Product fetched successfully');
     } catch (error: any) {
       console.error('[GET /api/admin/products/[id]] error:', error);
       return errorResponse(error.message || 'Internal server error', 500);
@@ -58,7 +67,21 @@ export async function PUT(
         return errorResponse('Product not found', 404);
       }
 
-      return successResponse(updatedProduct, 'Product updated successfully');
+      if (body.quantity !== undefined) {
+        await ProductInventory.findOneAndUpdate(
+          { productId: id },
+          { quantity: Number(body.quantity) },
+          { upsert: true }
+        );
+      }
+
+      const obj = typeof updatedProduct.toObject === 'function' ? updatedProduct.toObject() : updatedProduct;
+      let inv = await ProductInventory.findOne({ productId: id });
+      if (inv) {
+        obj.quantity = inv.quantity;
+      }
+
+      return successResponse(obj, 'Product updated successfully');
     } catch (error: any) {
       console.error('[PUT /api/admin/products/[id]] error:', error);
       return errorResponse(error.message || 'Internal server error', 500);
@@ -78,6 +101,9 @@ export async function DELETE(
       if (!deletedProduct) {
         return errorResponse('Product not found', 404);
       }
+
+      await ProductInventory.deleteOne({ productId: id });
+
       return successResponse(null, 'Product deleted successfully');
     } catch (error: any) {
       console.error('[DELETE /api/admin/products/[id]] error:', error);

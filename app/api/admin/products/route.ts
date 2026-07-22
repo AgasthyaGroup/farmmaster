@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import dbConnect from '@/src/database/dbConnection';
 import Product from '@/app/api/customer-app/models/Product';
+import ProductInventory from '@/app/api/customer-app/models/ProductInventory';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, createdResponse, errorResponse } from '@/src/utils/responses';
 
@@ -9,7 +10,18 @@ export async function GET(req: NextRequest) {
     try {
       await dbConnect();
       const products = await Product.find({}).sort({ createdAt: -1 });
-      return successResponse(products, 'Products fetched successfully');
+      
+      const formattedProducts = await Promise.all(products.map(async (prod: any) => {
+        const obj = typeof prod.toObject === 'function' ? prod.toObject() : prod;
+        let inv = await ProductInventory.findOne({ productId: prod._id });
+        if (!inv) {
+          inv = await ProductInventory.create({ productId: prod._id, quantity: prod.quantity || 0 });
+        }
+        obj.quantity = inv.quantity;
+        return obj;
+      }));
+
+      return successResponse(formattedProducts, 'Products fetched successfully');
     } catch (error: any) {
       console.error('[GET /api/admin/products] error:', error);
       return errorResponse(error.message || 'Internal server error', 500);
@@ -54,6 +66,12 @@ export async function POST(req: NextRequest) {
         categoryId,
         categoryName,
         categoryCode,
+      });
+
+      // Create ProductInventory record
+      await ProductInventory.create({
+        productId: newProduct._id,
+        quantity: quantity || 0,
       });
 
       return createdResponse(newProduct, 'Product created successfully');

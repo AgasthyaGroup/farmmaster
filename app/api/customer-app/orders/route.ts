@@ -5,6 +5,7 @@ import Order from '../models/Order';
 import { verifyAccessToken } from '@/src/utils/jwt';
 import { unauthorizedResponse, errorResponse } from '@/src/utils/responses';
 import Product from '../models/Product';
+import ProductInventory from '../models/ProductInventory';
 
 async function getCustomerFromRequest(req: NextRequest) {
   const authHeader = req.headers.get('Authorization');
@@ -85,6 +86,26 @@ export async function POST(req: NextRequest) {
             0
           );
 
+    await dbConnect();
+
+    // Check stock availability before placing order
+    for (const item of items) {
+      if (!item.product) {
+        return errorResponse('Product ID is required for each item', 400);
+      }
+      const prodObj = await Product.findById(item.product);
+      if (!prodObj) {
+        return errorResponse(`Product not found`, 404);
+      }
+      let inv = await ProductInventory.findOne({ productId: item.product });
+      if (!inv) {
+        inv = await ProductInventory.create({ productId: item.product, quantity: prodObj.quantity || 0 });
+      }
+      if (inv.quantity < Number(item.quantity)) {
+        return errorResponse(`Insufficient stock for ${prodObj.name}. Available: ${inv.quantity}`, 400);
+      }
+    }
+
     const newOrder = await Order.create({
       customerId: customer._id,
       orderNumber,
@@ -97,6 +118,10 @@ export async function POST(req: NextRequest) {
     // Reduce product stocks dynamically
     for (const item of items) {
       if (item.product && item.quantity) {
+        await ProductInventory.findOneAndUpdate(
+          { productId: item.product },
+          { $inc: { quantity: -Number(item.quantity) } }
+        );
         await Product.findByIdAndUpdate(
           item.product,
           { $inc: { quantity: -Number(item.quantity) } }

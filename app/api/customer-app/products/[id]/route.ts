@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/src/database/dbConnection';
 import Product from '../../models/Product';
+import ProductInventory from '../../models/ProductInventory';
 import { errorResponse } from '@/src/utils/responses';
 
 export async function GET(
@@ -14,7 +15,15 @@ export async function GET(
     if (!product) {
       return errorResponse('Product not found or inactive', 404);
     }
-    return NextResponse.json({ success: true, data: product });
+    
+    const obj = typeof product.toObject === 'function' ? product.toObject() : product;
+    let inv = await ProductInventory.findOne({ productId: product._id });
+    if (!inv) {
+      inv = await ProductInventory.create({ productId: product._id, quantity: product.quantity || 0 });
+    }
+    obj.quantity = inv.quantity;
+
+    return NextResponse.json({ success: true, data: obj });
   } catch (error: any) {
     console.error('[GET /api/customer-app/products/[id]] error:', error);
     return errorResponse(error.message || 'Internal server error', 500);
