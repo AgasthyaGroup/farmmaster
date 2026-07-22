@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import dbConnect from '@/src/database/dbConnection';
-import Customer from '../models/Customer';
-import Address from '../models/Address';
+import Customer from '@/app/api/customer-app/models/Customer';
+import Address from '@/app/api/customer-app/models/Address';
 import { verifyAccessToken } from '@/src/utils/jwt';
 import { successResponse, errorResponse, createdResponse, unauthorizedResponse } from '@/src/utils/responses';
 

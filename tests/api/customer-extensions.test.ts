@@ -9,6 +9,7 @@ vi.mock('@/app/api/customer-app/models/Customer', () => ({
   default: {
     find: vi.fn(),
     findOne: vi.fn(),
+    findById: vi.fn(),
     findByIdAndUpdate: vi.fn(),
   },
 }));
@@ -95,6 +96,8 @@ import { PUT as putAdminCustomer, DELETE as deleteAdminCustomer } from '@/app/ap
 describe('Customer Extensions API tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(Customer.findById).mockResolvedValue(mockCustomerRecord as any);
+    vi.mocked(Customer.findOne).mockResolvedValue(mockCustomerRecord as any);
   });
 
   const mockCustomerRecord = {

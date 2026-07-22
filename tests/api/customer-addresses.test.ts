@@ -35,10 +35,6 @@ import Address from '@/app/api/customer-app/models/Address';
 import { GET, POST } from '@/app/api/customer-app/addresses/route';
 
 describe('Customer Addresses API', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   const mockCustomerRecord = {
     _id: 'customer-123',
     name: 'Jaswanth G',
@@ -47,6 +43,12 @@ describe('Customer Addresses API', () => {
     isDeleted: false,
     save: vi.fn().mockResolvedValue(true),
   };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(Customer.findById).mockResolvedValue(mockCustomerRecord as any);
+    vi.mocked(Customer.findOne).mockResolvedValue(mockCustomerRecord as any);
+  });
 
   it('GET returns list of addresses for authorized customer', async () => {
     vi.mocked(Customer.findById).mockResolvedValue(mockCustomerRecord as any);

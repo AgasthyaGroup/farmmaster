@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import dbConnect from '@/src/database/dbConnection';
-import Customer from '../../models/Customer';
-import Favourite from '../../models/Favourite';
+import Customer from '@/app/api/customer-app/models/Customer';
+import Favourite from '@/app/api/customer-app/models/Favourite';
 import { verifyAccessToken } from '@/src/utils/jwt';
 import { successResponse, errorResponse, unauthorizedResponse } from '@/src/utils/responses';
 
