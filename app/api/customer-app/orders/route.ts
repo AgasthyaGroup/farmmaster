@@ -118,13 +118,20 @@ export async function POST(req: NextRequest) {
     // Reduce product stocks dynamically
     for (const item of items) {
       if (item.product && item.quantity) {
+        const prodObj = await Product.findById(item.product);
+        let inv = await ProductInventory.findOne({ productId: item.product });
+        if (!inv) {
+          inv = await ProductInventory.create({ productId: item.product, quantity: prodObj ? prodObj.quantity : 0 });
+        }
+        const newQty = Math.max(0, inv.quantity - Number(item.quantity));
+
         await ProductInventory.findOneAndUpdate(
           { productId: item.product },
-          { $inc: { quantity: -Number(item.quantity) } }
+          { quantity: newQty }
         );
         await Product.findByIdAndUpdate(
           item.product,
-          { $inc: { quantity: -Number(item.quantity) } }
+          { quantity: newQty }
         );
       }
     }

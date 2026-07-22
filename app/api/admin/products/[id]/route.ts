@@ -57,6 +57,10 @@ export async function PUT(
         }
       }
 
+      if (body.quantity !== undefined) {
+        body.quantity = Math.max(0, Number(body.quantity));
+      }
+
       const updatedProduct = await Product.findByIdAndUpdate(
         id,
         { $set: body },
@@ -70,7 +74,7 @@ export async function PUT(
       if (body.quantity !== undefined) {
         await ProductInventory.findOneAndUpdate(
           { productId: id },
-          { quantity: Number(body.quantity) },
+          { quantity: body.quantity },
           { upsert: true }
         );
       }

@@ -65,6 +65,7 @@ const sidebarItems: SidebarItem[] = [
       { name: 'Favorites', href: '/customer-app/favorites' },
       { name: 'Orders', href: '/customer-app/orders' },
       { name: 'Products', href: '/customer-app/products' },
+      { name: 'Inventory', href: '/customer-app/inventory' },
       { name: 'Categories', href: '/customer-app/categories' },
       { name: 'Locations', href: '/customer-app/locations' },
       { name: 'Executives', href: '/customer-app/executives' },
