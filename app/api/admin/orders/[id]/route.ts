@@ -41,3 +41,23 @@ export async function PUT(
     }
   });
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  return withAuth(req, ['SUPER_ADMIN', 'FARM_ADMIN', 'USERS'], async () => {
+    try {
+      const { id } = await params;
+      await dbConnect();
+      const deletedOrder = await Order.findByIdAndDelete(id);
+      if (!deletedOrder) {
+        return errorResponse('Order not found', 404);
+      }
+      return successResponse(deletedOrder, 'Order deleted successfully');
+    } catch (error: any) {
+      console.error('[DELETE /api/admin/orders/[id]] error:', error);
+      return errorResponse(error.message || 'Internal server error', 500);
+    }
+  });
+}

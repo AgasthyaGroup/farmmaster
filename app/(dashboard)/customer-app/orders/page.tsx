@@ -13,7 +13,8 @@ import {
   Clock,
   XCircle,
   Truck,
-  ArrowUpDown
+  ArrowUpDown,
+  Trash2
 } from 'lucide-react';
 
 interface Customer {
@@ -105,6 +106,30 @@ export default function OrdersPage() {
       alert(err.message || 'An error occurred');
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const handleDeleteOrder = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this order?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/admin/orders/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const result = await res.json();
+      if (res.ok && result.success) {
+        await fetchOrders();
+        if (selectedOrder && selectedOrder._id === id) {
+          setSelectedOrder(null);
+        }
+      } else {
+        alert(result.error || 'Failed to delete order');
+      }
+    } catch (err: any) {
+      alert(err.message || 'An error occurred');
     }
   };
 
@@ -238,13 +263,22 @@ export default function OrdersPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <button
-                          onClick={() => setSelectedOrder(order)}
-                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black text-blue-700 bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-all uppercase tracking-wider shadow-sm hover:shadow"
-                        >
-                          <Info className="w-3.5 h-3.5" />
-                          Details
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setSelectedOrder(order)}
+                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black text-blue-700 bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-all uppercase tracking-wider shadow-sm hover:shadow"
+                          >
+                            <Info className="w-3.5 h-3.5" />
+                            Details
+                          </button>
+                          <button
+                            onClick={() => handleDeleteOrder(order._id)}
+                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black text-red-700 bg-red-50 border border-red-100 hover:bg-red-100 transition-all uppercase tracking-wider shadow-sm hover:shadow"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
