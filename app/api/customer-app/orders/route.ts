@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       return errorResponse('Invalid JSON body', 400);
     }
 
-    const { orderNumber, status, items, totalPrice } = body;
+    const { orderNumber, status, items, totalPrice, address } = body;
     if (!orderNumber || !items || !Array.isArray(items) || items.length === 0) {
       return errorResponse('Missing required fields or items', 400);
     }
@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
       status: status || 'pending',
       totalPrice: calculatedTotal,
       items,
+      address,
     });
 
     return NextResponse.json(newOrder, { status: 201 });

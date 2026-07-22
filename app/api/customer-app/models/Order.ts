@@ -14,6 +14,7 @@ const OrderSchema = new Schema(
     status: { type: String, default: 'pending' },
     totalPrice: { type: Number, default: 0 },
     items: [OrderItemSchema],
+    address: { type: Object },
   },
   { timestamps: true }
 );
