@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     const ordersList = await Order.find({ customerId: customer._id }).sort({ createdAt: -1 });
 
     const formattedOrders = ordersList.map((order: any) => {
-      const obj = order.toObject();
+      const obj = typeof order.toObject === 'function' ? order.toObject() : order;
       const computedTotal = (obj.items || []).reduce(
         (sum: number, item: any) => sum + (Number(item.price || 0) * Number(item.quantity || 1)),
         0
@@ -96,6 +96,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(newOrder, { status: 201 });
   } catch (error: any) {
     console.error('[POST /api/customer-app/orders] error:', error);
+    return errorResponse(error.message || 'Internal server error', 500);
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const customer = await getCustomerFromRequest(req);
+    if (!customer) {
+      return unauthorizedResponse('Invalid or expired token');
+    }
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    await dbConnect();
+    if (id) {
+      const deletedOrder = await Order.findOneAndDelete({ _id: id, customerId: customer._id });
+      if (!deletedOrder) {
+        return errorResponse('Order not found', 404);
+      }
+      return NextResponse.json({ success: true, message: 'Order deleted successfully' });
+    } else {
+      await Order.deleteMany({ customerId: customer._id });
+      return NextResponse.json({ success: true, message: 'All orders deleted successfully' });
+    }
+  } catch (error: any) {
+    console.error('[DELETE /api/customer-app/orders] error:', error);
     return errorResponse(error.message || 'Internal server error', 500);
   }
 }
