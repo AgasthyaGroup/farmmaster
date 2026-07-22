@@ -4,6 +4,7 @@ import Customer from '../models/Customer';
 import Order from '../models/Order';
 import { verifyAccessToken } from '@/src/utils/jwt';
 import { unauthorizedResponse, errorResponse } from '@/src/utils/responses';
+import Product from '../models/Product';
 
 async function getCustomerFromRequest(req: NextRequest) {
   const authHeader = req.headers.get('Authorization');
@@ -92,6 +93,16 @@ export async function POST(req: NextRequest) {
       items,
       address,
     });
+
+    // Reduce product stocks dynamically
+    for (const item of items) {
+      if (item.product && item.quantity) {
+        await Product.findByIdAndUpdate(
+          item.product,
+          { $inc: { quantity: -Number(item.quantity) } }
+        );
+      }
+    }
 
     return NextResponse.json(newOrder, { status: 201 });
   } catch (error: any) {
