@@ -28,6 +28,7 @@ export default function InventoryPage() {
   const [error, setError] = useState('');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [localQuantities, setLocalQuantities] = useState<Record<string, string>>({});
 
   const fetchProducts = async () => {
     try {
@@ -77,6 +78,12 @@ export default function InventoryPage() {
         setProducts(prev => 
           prev.map(p => p._id === productId ? { ...p, quantity: safeQuantity } : p)
         );
+        // Clear local quantity for this product so it falls back to products.quantity
+        setLocalQuantities(prev => {
+          const next = { ...prev };
+          delete next[productId];
+          return next;
+        });
         setSuccessMessage('Stock updated successfully');
         setTimeout(() => setSuccessMessage(null), 2000);
       } else {
@@ -178,7 +185,11 @@ export default function InventoryPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-3">
                         <button
-                          onClick={() => handleUpdateStock(product._id, product.quantity - 1)}
+                          onClick={() => {
+                            const nextQty = product.quantity - 1;
+                            setLocalQuantities(prev => ({ ...prev, [product._id]: nextQty.toString() }));
+                            handleUpdateStock(product._id, nextQty);
+                          }}
                           disabled={product.quantity <= 0 || updatingId === product._id}
                           className="h-9 w-9 rounded-xl border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
                         >
@@ -187,18 +198,44 @@ export default function InventoryPage() {
                         
                         <input
                           type="number"
-                          value={product.quantity}
+                          value={localQuantities[product._id] !== undefined ? localQuantities[product._id] : product.quantity}
                           min="0"
-                          disabled={updatingId === product._id}
                           onChange={(e) => {
-                            const val = e.target.value === '' ? 0 : parseInt(e.target.value);
-                            handleUpdateStock(product._id, isNaN(val) ? 0 : val);
+                            setLocalQuantities(prev => ({
+                              ...prev,
+                              [product._id]: e.target.value
+                            }));
+                          }}
+                          onBlur={() => {
+                            const valStr = localQuantities[product._id];
+                            if (valStr !== undefined) {
+                              const val = valStr === '' ? 0 : parseInt(valStr);
+                              const safeVal = isNaN(val) ? 0 : Math.max(0, val);
+                              if (safeVal !== product.quantity) {
+                                handleUpdateStock(product._id, safeVal);
+                              } else {
+                                setLocalQuantities(prev => {
+                                  const next = { ...prev };
+                                  delete next[product._id];
+                                  return next;
+                                });
+                              }
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.currentTarget.blur();
+                            }
                           }}
                           className="w-20 text-center font-bold text-sm bg-slate-50 border border-slate-200 py-1.5 px-2 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                         />
 
                         <button
-                          onClick={() => handleUpdateStock(product._id, product.quantity + 1)}
+                          onClick={() => {
+                            const nextQty = product.quantity + 1;
+                            setLocalQuantities(prev => ({ ...prev, [product._id]: nextQty.toString() }));
+                            handleUpdateStock(product._id, nextQty);
+                          }}
                           disabled={updatingId === product._id}
                           className="h-9 w-9 rounded-xl border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors"
                         >
