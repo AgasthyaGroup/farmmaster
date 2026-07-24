@@ -195,6 +195,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                             <Link
                               key={child.href}
                               href={child.href}
+                              scroll={false}
                               className={cn(
                                 "flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all duration-150",
                                 isChildActive
@@ -217,6 +218,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href!}
+                  scroll={false}
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative",
                     isActive 
