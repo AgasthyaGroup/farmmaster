@@ -78,9 +78,11 @@ const sidebarItems: SidebarItem[] = [
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
   const router = useRouter();
   const pathname = usePathname();
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>(() => {
+    return pathname?.startsWith('/customer-app') ? { 'Customer App': true } : {};
+  });
 
   useEffect(() => {
     if (pathname.startsWith('/customer-app')) {
@@ -140,8 +142,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     setExpandedMenus((prev) => ({ ...prev, [name]: !prev[name] }));
   };
 
+  const isCustomerApp = pathname.startsWith('/customer-app');
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex overflow-hidden">
+    <div className={cn(
+      "min-h-screen bg-slate-50 text-slate-900 flex overflow-hidden",
+      isCustomerApp && "customer-app-theme"
+    )}>
       {/* Sidebar Desktop */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0",
