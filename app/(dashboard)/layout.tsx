@@ -81,7 +81,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>(() => {
-    return pathname?.startsWith('/customer-app') ? { 'Customer App': true } : {};
+    const initial: Record<string, boolean> = {};
+    if (pathname?.startsWith('/customer-app')) {
+      initial['Customer App'] = true;
+    }
+    return initial;
   });
 
   useEffect(() => {
