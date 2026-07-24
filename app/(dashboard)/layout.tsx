@@ -149,10 +149,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const isCustomerApp = pathname.startsWith('/customer-app');
 
   return (
-    <div className={cn(
-      "min-h-screen bg-slate-50 text-slate-900 flex overflow-hidden",
-      isCustomerApp && "customer-app-theme"
-    )}>
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex overflow-hidden">
       {/* Sidebar Desktop */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0",
@@ -172,8 +169,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 const isExpanded = !!expandedMenus[item.name];
                 const isAnyChildActive = item.children.some((child) => pathname === child.href);
 
+                const isCustomerAppItem = item.name === 'Customer App';
+
                 return (
-                  <div key={item.name} className="space-y-1">
+                  <div key={item.name} className={cn("space-y-1", isCustomerAppItem && "customer-app-theme")}>
                     <button
                       onClick={() => toggleMenu(item.name)}
                       className={cn(
@@ -279,7 +278,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-10 relative">
+        <main className={cn("flex-1 overflow-y-auto p-10 relative", isCustomerApp && "customer-app-theme")}>
           {children}
         </main>
       </div>
