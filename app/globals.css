@@ -4,13 +4,13 @@
   --background: #ffffff;
   --foreground: #171717;
 
-  --primary-blue: #2563eb;
-  --primary-blue-hover: #1d4ed8;
-  --accent-blue: #eff6ff;
-  --accent-blue-100: #dbeafe;
-  --surface-bg: #f8fafc;
-  --text-muted: #64748b;
-  --primary-navy: #0f172a;
+  --primary-blue: #1D8FEC;
+  --primary-blue-hover: #0c7cd5;
+  --accent-blue: #EBF5FF;
+  --accent-blue-100: #d0e7ff;
+  --surface-bg: #F8F9FA;
+  --text-muted: #6B7280;
+  --primary-navy: #191D38;
 }
 
 .customer-app-theme {
