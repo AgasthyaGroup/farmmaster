@@ -47,15 +47,22 @@ interface SidebarItem {
 }
 
 const sidebarItems: SidebarItem[] = [
-  { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
-  { name: 'Farms', icon: Tractor, href: '/farms' },
-  { name: 'Sheds', icon: Warehouse, href: '/sheds' },
-  { name: 'Tags', icon: Tag, href: '/tags' },
-  { name: 'Cattle', icon: CattleIcon, href: '/cattle' },
-  { name: 'Land Management', icon: Map, href: '/land-management' },
-  { name: 'BMC Management', icon: Snowflake, href: '/bmc-management' },
-  { name: 'Departments', icon: Building2, href: '/departments' },
-  { name: 'User Management', icon: Users, href: '/users' },
+  {
+    name: 'Health Application',
+    icon: Tractor,
+    children: [
+      { name: 'Dashboard', href: '/' },
+      { name: 'Farms', href: '/farms' },
+      { name: 'Sheds', href: '/sheds' },
+      { name: 'Tags', href: '/tags' },
+      { name: 'Cattle', href: '/cattle' },
+      { name: 'Land Management', href: '/land-management' },
+      { name: 'BMC Management', href: '/bmc-management' },
+      { name: 'Departments', href: '/departments' },
+      { name: 'User Management', href: '/users' },
+      { name: 'Role Management', href: '/roles' },
+    ],
+  },
   {
     name: 'Customer App',
     icon: Users,
@@ -72,7 +79,6 @@ const sidebarItems: SidebarItem[] = [
       { name: 'Routes', href: '/customer-app/routes' },
     ],
   },
-  { name: 'Role Management', icon: ShieldCheck, href: '/roles' },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -85,12 +91,20 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     if (pathname?.startsWith('/customer-app')) {
       initial['Customer App'] = true;
     }
+    const isHealthAppPath = ['/', '/farms', '/sheds', '/tags', '/cattle', '/land-management', '/bmc-management', '/departments', '/users', '/roles'].some(path => pathname === path || (path !== '/' && pathname?.startsWith(path + '/')));
+    if (isHealthAppPath) {
+      initial['Health Application'] = true;
+    }
     return initial;
   });
 
   useEffect(() => {
     if (pathname.startsWith('/customer-app')) {
       setExpandedMenus((prev) => ({ ...prev, 'Customer App': true }));
+    }
+    const isHealthAppPath = ['/', '/farms', '/sheds', '/tags', '/cattle', '/land-management', '/bmc-management', '/departments', '/users', '/roles'].some(path => pathname === path || (path !== '/' && pathname.startsWith(path + '/')));
+    if (isHealthAppPath) {
+      setExpandedMenus((prev) => ({ ...prev, 'Health Application': true }));
     }
   }, [pathname]);
 
@@ -135,12 +149,25 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   if (!user) return null;
 
-  const allowedSidebarItems = sidebarItems.filter((item) => {
-    if (user.role === 'FARM_ADMIN' && (item.href === '/users' || item.href === '/roles')) {
-      return false;
-    }
-    return true;
-  });
+  const allowedSidebarItems = sidebarItems
+    .map((item) => {
+      if (item.children) {
+        const children = item.children.filter((child) => {
+          if (user.role === 'FARM_ADMIN' && (child.href === '/users' || child.href === '/roles')) {
+            return false;
+          }
+          return true;
+        });
+        return { ...item, children };
+      }
+      return item;
+    })
+    .filter((item) => {
+      if (user.role === 'FARM_ADMIN' && (item.href === '/users' || item.href === '/roles')) {
+        return false;
+      }
+      return true;
+    });
 
   const toggleMenu = (name: string) => {
     setExpandedMenus((prev) => ({ ...prev, [name]: !prev[name] }));
