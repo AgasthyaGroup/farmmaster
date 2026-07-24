@@ -3,34 +3,16 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-
-  --primary-blue: #1D8FEC;
-  --primary-blue-hover: #0c7cd5;
-  --accent-blue: #EBF5FF;
-  --accent-blue-100: #d0e7ff;
-  --surface-bg: #F8F9FA;
-  --text-muted: #6B7280;
-  --primary-navy: #191D38;
-}
-
-.customer-app-theme {
-  --primary-blue: #1D8FEC;
-  --primary-blue-hover: #0c7cd5;
-  --accent-blue: #EBF5FF;
-  --accent-blue-100: #d0e7ff;
-  --surface-bg: #F8F9FA;
-  --text-muted: #6B7280;
-  --primary-navy: #191D38;
 }
 
 @theme {
-  --color-blue-50: var(--accent-blue);
-  --color-blue-100: var(--accent-blue-100);
-  --color-blue-600: var(--primary-blue);
-  --color-blue-700: var(--primary-blue-hover);
-  --color-slate-50: var(--surface-bg);
-  --color-slate-500: var(--text-muted);
-  --color-slate-900: var(--primary-navy);
+  --color-blue-50: #EBF5FF;
+  --color-blue-100: #d0e7ff;
+  --color-blue-600: #1D8FEC;
+  --color-blue-700: #0c7cd5;
+  --color-slate-50: #F8F9FA;
+  --color-slate-500: #6B7280;
+  --color-slate-900: #191D38;
 }
 
 body {
