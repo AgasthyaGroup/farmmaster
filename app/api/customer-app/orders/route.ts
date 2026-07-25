@@ -6,6 +6,7 @@ import { verifyAccessToken } from '@/src/utils/jwt';
 import { unauthorizedResponse, errorResponse } from '@/src/utils/responses';
 import Product from '../models/Product';
 import ProductInventory from '../models/ProductInventory';
+import DeliveryRoute from '../models/DeliveryRoute';
 
 async function getCustomerFromRequest(req: NextRequest) {
   const authHeader = req.headers.get('Authorization');
@@ -80,6 +81,20 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Pincode Auto-Assignment to Delivery Executive
+    let assignedTo = null;
+    const pincode = address?.pincode || address?.zipCode || address?.postalCode;
+    if (pincode) {
+      const cleanPincode = String(pincode).trim();
+      const matchingRoute = await DeliveryRoute.findOne({
+        pincodes: cleanPincode,
+        status: 'active',
+      });
+      if (matchingRoute && matchingRoute.assignedExecutiveId) {
+        assignedTo = matchingRoute.assignedExecutiveId;
+      }
+    }
+
     const newOrder = await Order.create({
       customerId: customer._id,
       orderNumber,
@@ -87,6 +102,7 @@ export async function POST(req: NextRequest) {
       totalPrice: calculatedTotal,
       items,
       address,
+      assignedTo,
     });
 
     // Reduce product stocks dynamically

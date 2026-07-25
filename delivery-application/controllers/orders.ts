@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/src/database/dbConnection';
 import Order from '../models/Order';
 import DeliveryExecutive from '../models/DeliveryExecutive';
+import DeliveryRoute from '@/app/api/customer-app/models/DeliveryRoute';
 import { verifyAccessToken } from '@/src/utils/jwt';
 import { unauthorizedResponse, errorResponse, successResponse } from '@/src/utils/responses';
 
@@ -25,7 +26,21 @@ export async function getOrders(req: NextRequest) {
 
     let ordersList;
     if (user.role === 'DELIVERY_EXECUTIVE') {
-      ordersList = await Order.find({ assignedTo: user.userId })
+      // Find all routes assigned to this delivery executive
+      const executiveRoutes = await DeliveryRoute.find({ assignedExecutiveId: user.userId });
+      const assignedPincodes = executiveRoutes.flatMap((r: any) => r.pincodes || []);
+
+      const queryConditions: any[] = [{ assignedTo: user.userId }];
+
+      if (assignedPincodes.length > 0) {
+        queryConditions.push(
+          { 'address.pincode': { $in: assignedPincodes } },
+          { 'address.zipCode': { $in: assignedPincodes } },
+          { 'address.postalCode': { $in: assignedPincodes } }
+        );
+      }
+
+      ordersList = await Order.find({ $or: queryConditions })
         .sort({ createdAt: -1 })
         .populate('assignedTo', 'name');
     } else {
