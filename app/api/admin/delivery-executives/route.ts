@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
         vehicleNumber: vehicleNumber || '',
         pincodes: parsedPincodes,
         assignedRouteId: assignedRouteId || null,
-        status: status || 'inactive',
+        status: status || 'active',
       });
 
       if (assignedRouteId) {

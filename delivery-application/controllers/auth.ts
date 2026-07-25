@@ -23,10 +23,15 @@ export async function login(req: NextRequest) {
 
     await dbConnect();
 
+    // Clean phone input for robust matching (e.g. +91 9876543210 -> 9876543210)
+    const cleanPhone = username.replace(/^(\+91|0)/, '').replace(/\D/g, '');
+
     // Find Delivery Executive by phone or email
     const executive = await DeliveryExecutive.findOne({
       $or: [
         { phone: username },
+        { phone: cleanPhone },
+        { phone: `+91${cleanPhone}` },
         { email: username.toLowerCase() }
       ]
     });
