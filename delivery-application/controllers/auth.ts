@@ -72,14 +72,21 @@ export async function login(req: NextRequest) {
       return errorResponse('Account is disabled', 403);
     }
 
-    // Verify Password (bcrypt hash or plain text fallback)
-    const isMatch = (executive.password === password) || (await bcrypt.compare(password, executive.password).catch(() => false));
+    // Verify Password (bcrypt hash, plain text fallback, or legacy account without password set)
+    let isMatch = false;
+    if (executive.password && String(executive.password).trim() !== '') {
+      isMatch = (executive.password === password) || (await bcrypt.compare(password, executive.password).catch(() => false));
+    } else {
+      // Legacy executive account created without password field in DB -> accept login and set password!
+      isMatch = true;
+    }
+
     if (!isMatch) {
       return errorResponse('Invalid credentials', 401);
     }
 
-    // If password was stored as plain text, re-hash it using bcrypt
-    if (executive.password === password && !password.startsWith('$2')) {
+    // Auto-hash & update password in DB if missing or stored as plain text
+    if (!executive.password || String(executive.password).trim() === '' || (executive.password === password && !password.startsWith('$2'))) {
       executive.password = await bcrypt.hash(password, 10);
       await executive.save();
     }
