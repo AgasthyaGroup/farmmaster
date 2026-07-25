@@ -59,5 +59,6 @@ export async function POST(req: NextRequest) {
       console.error('[POST /api/admin/delivery-executives] error:', error);
       return errorResponse(error.message || 'Internal server error', 500);
     }
-  });
+  })
 }
+
