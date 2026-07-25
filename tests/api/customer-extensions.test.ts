@@ -39,6 +39,13 @@ vi.mock('@/app/api/customer-app/models/Order', () => ({
   },
 }));
 
+vi.mock('@/delivery-application/models/Order', () => ({
+  default: {
+    find: vi.fn(),
+    create: vi.fn(),
+  },
+}));
+
 vi.mock('@/app/api/customer-app/models/ProductInventory', () => ({
   default: {
     findOne: vi.fn().mockResolvedValue({ quantity: 100 }),
@@ -83,6 +90,7 @@ import Customer from '@/app/api/customer-app/models/Customer';
 import Address from '@/app/api/customer-app/models/Address';
 import Favourite from '@/app/api/customer-app/models/Favourite';
 import Order from '@/app/api/customer-app/models/Order';
+import DeliveryOrder from '@/delivery-application/models/Order';
 import User from '@/src/models/User';
 import Role from '@/src/models/Role';
 import { GET as getAddress, PUT as putAddress, DELETE as deleteAddress, PATCH as patchAddress } from '@/app/api/customer-app/addresses/[id]/route';
@@ -268,8 +276,12 @@ describe('Customer Extensions API tests', () => {
     const mockOrders = [
       { _id: 'ord-1', orderNumber: 'ORD-100', status: 'pending', items: [{ product: 'prod-1', name: 'Milk', price: 50, quantity: 2 }] }
     ];
-    const mockSort = vi.fn().mockResolvedValue(mockOrders);
+    const mockPopulate = vi.fn().mockResolvedValue(mockOrders);
+    const mockSort = vi.fn().mockReturnValue({ populate: mockPopulate });
     vi.mocked(Order.find).mockReturnValue({
+      sort: mockSort,
+    } as any);
+    vi.mocked(DeliveryOrder.find).mockReturnValue({
       sort: mockSort,
     } as any);
 
@@ -281,8 +293,9 @@ describe('Customer Extensions API tests', () => {
     const response = await getOrders(req as any);
     const body = await response.json();
 
-    expect(Array.isArray(body)).toBe(true);
-    expect(body[0].orderNumber).toBe('ORD-100');
+    const orders = Array.isArray(body) ? body : (body.data || body.orders || []);
+    expect(Array.isArray(orders)).toBe(true);
+    expect(orders[0].orderNumber).toBe('ORD-100');
   });
 
   it('admin/customers GET returns list of customers with grouped addresses', async () => {

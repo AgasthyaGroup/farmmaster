@@ -8,17 +8,19 @@ vi.mock('@/src/database/dbConnection', () => ({
 vi.mock('@/app/api/customer-app/models/DeliveryExecutive', () => ({
   default: {
     find: vi.fn(() => ({
-      sort: vi.fn().mockResolvedValue([
-        {
-          _id: 'exec-123',
-          name: 'Ramesh Kumar',
-          phone: '9876543210',
-          email: 'ramesh@gmail.com',
-          vehicleType: 'Bike',
-          vehicleNumber: 'KA-03-HA-1234',
-          status: 'active',
-        },
-      ]),
+      populate: vi.fn(() => ({
+        sort: vi.fn().mockResolvedValue([
+          {
+            _id: 'exec-123',
+            name: 'Ramesh Kumar',
+            phone: '9876543210',
+            email: 'ramesh@gmail.com',
+            vehicleType: 'Bike',
+            vehicleNumber: 'KA-03-HA-1234',
+            status: 'active',
+          },
+        ]),
+      })),
     })),
     findOne: vi.fn(),
     create: vi.fn(),

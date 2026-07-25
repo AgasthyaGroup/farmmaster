@@ -7,6 +7,7 @@ import { unauthorizedResponse, errorResponse } from '@/src/utils/responses';
 import Product from '../models/Product';
 import ProductInventory from '../models/ProductInventory';
 import DeliveryRoute from '../models/DeliveryRoute';
+import DeliveryExecutive from '../models/DeliveryExecutive';
 
 async function getCustomerFromRequest(req: NextRequest) {
   const authHeader = req.headers.get('Authorization');
@@ -92,6 +93,14 @@ export async function POST(req: NextRequest) {
       });
       if (matchingRoute && matchingRoute.assignedExecutiveId) {
         assignedTo = matchingRoute.assignedExecutiveId;
+      } else {
+        const matchingExecutive = await DeliveryExecutive.findOne({
+          pincodes: cleanPincode,
+          status: 'active',
+        });
+        if (matchingExecutive) {
+          assignedTo = matchingExecutive._id;
+        }
       }
     }
 

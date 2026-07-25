@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/src/database/dbConnection';
 import DeliveryExecutive from '@/app/api/customer-app/models/DeliveryExecutive';
+import DeliveryRoute from '@/app/api/customer-app/models/DeliveryRoute';
 import { withAuth } from '@/src/utils/authGuard';
 import { successResponse, errorResponse } from '@/src/utils/responses';
 
@@ -56,6 +57,20 @@ export async function PUT(
         delete updateData.password;
       }
 
+      if (updateData.pincodes !== undefined) {
+        updateData.pincodes = Array.isArray(updateData.pincodes)
+          ? updateData.pincodes.map((p: any) => String(p).trim()).filter(Boolean)
+          : (typeof updateData.pincodes === 'string' ? updateData.pincodes.split(',').map((p: string) => p.trim()).filter(Boolean) : []);
+      }
+
+      // If assignedRouteId was provided and pincodes was empty, sync from route
+      if (updateData.assignedRouteId && (!updateData.pincodes || updateData.pincodes.length === 0)) {
+        const routeObj = await DeliveryRoute.findById(updateData.assignedRouteId);
+        if (routeObj && routeObj.pincodes) {
+          updateData.pincodes = routeObj.pincodes;
+        }
+      }
+
       const updated = await DeliveryExecutive.findByIdAndUpdate(
         id,
         { $set: updateData },
@@ -64,6 +79,18 @@ export async function PUT(
 
       if (!updated) {
         return errorResponse('Delivery executive not found', 404);
+      }
+
+      // Sync route assignedExecutiveId
+      if (updateData.assignedRouteId !== undefined) {
+        // Clear previous routes assigned to this executive
+        await DeliveryRoute.updateMany(
+          { assignedExecutiveId: id },
+          { $set: { assignedExecutiveId: null } }
+        );
+        if (updateData.assignedRouteId) {
+          await DeliveryRoute.findByIdAndUpdate(updateData.assignedRouteId, { assignedExecutiveId: id });
+        }
       }
 
       return successResponse(updated, 'Delivery executive updated successfully');

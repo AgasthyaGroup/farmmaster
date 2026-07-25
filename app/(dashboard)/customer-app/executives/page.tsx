@@ -17,6 +17,13 @@ import {
   Truck
 } from 'lucide-react';
 
+interface DeliveryRoute {
+  _id: string;
+  routeName: string;
+  routeCode: string;
+  pincodes?: string[];
+}
+
 interface DeliveryExecutive {
   _id: string;
   name: string;
@@ -24,12 +31,15 @@ interface DeliveryExecutive {
   email: string;
   vehicleType: string;
   vehicleNumber: string;
+  pincodes?: string[];
+  assignedRouteId?: any;
   status: string;
   createdAt: string;
 }
 
 export default function ExecutivesPage() {
   const [executives, setExecutives] = useState<DeliveryExecutive[]>([]);
+  const [routes, setRoutes] = useState<DeliveryRoute[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState('');
@@ -48,20 +58,29 @@ export default function ExecutivesPage() {
     password: '',
     vehicleType: 'Bike',
     vehicleNumber: '',
+    pincodesInput: '',
+    assignedRouteId: '',
     status: 'inactive',
   });
 
-  const fetchExecutives = async () => {
+  const fetchData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/admin/delivery-executives', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const result = await res.json();
-      if (result.success) {
-        setExecutives(result.data);
+      const [execRes, routeRes] = await Promise.all([
+        fetch('/api/admin/delivery-executives', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/admin/delivery-routes', { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      const execResult = await execRes.json();
+      const routeResult = await routeRes.json();
+
+      if (execResult.success) {
+        setExecutives(execResult.data);
       } else {
-        setError(result.error || 'Failed to fetch delivery executives');
+        setError(execResult.error || 'Failed to fetch delivery executives');
+      }
+
+      if (routeResult.success) {
+        setRoutes(routeResult.data);
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred while fetching delivery executives');
@@ -71,7 +90,7 @@ export default function ExecutivesPage() {
   };
 
   useEffect(() => {
-    fetchExecutives();
+    fetchData();
   }, []);
 
   const handleOpenAddModal = () => {
@@ -83,6 +102,8 @@ export default function ExecutivesPage() {
       password: '',
       vehicleType: 'Bike',
       vehicleNumber: '',
+      pincodesInput: '',
+      assignedRouteId: '',
       status: 'inactive',
     });
     setModalMessage({ type: '', text: '' });
@@ -91,6 +112,7 @@ export default function ExecutivesPage() {
 
   const handleOpenEditModal = (exec: DeliveryExecutive) => {
     setEditingExecutive(exec);
+    const routeId = typeof exec.assignedRouteId === 'object' ? exec.assignedRouteId?._id || '' : exec.assignedRouteId || '';
     setForm({
       name: exec.name || '',
       phone: exec.phone || '',
@@ -98,6 +120,8 @@ export default function ExecutivesPage() {
       password: '',
       vehicleType: exec.vehicleType || 'Bike',
       vehicleNumber: exec.vehicleNumber || '',
+      pincodesInput: exec.pincodes ? exec.pincodes.join(', ') : '',
+      assignedRouteId: routeId,
       status: exec.status || 'inactive',
     });
     setModalMessage({ type: '', text: '' });
@@ -114,13 +138,19 @@ export default function ExecutivesPage() {
       const url = editingExecutive ? `/api/admin/delivery-executives/${editingExecutive._id}` : '/api/admin/delivery-executives';
       const method = editingExecutive ? 'PUT' : 'POST';
 
+      const payload = {
+        ...form,
+        pincodes: form.pincodesInput,
+        assignedRouteId: form.assignedRouteId || null,
+      };
+
       const res = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(form)
+        body: JSON.stringify(payload)
       });
 
       const result = await res.json();
@@ -129,7 +159,7 @@ export default function ExecutivesPage() {
           type: 'success',
           text: editingExecutive ? 'Executive updated successfully' : 'Executive registered successfully'
         });
-        await fetchExecutives();
+        await fetchData();
         setTimeout(() => setIsModalOpen(false), 1200);
       } else {
         setModalMessage({ type: 'error', text: result.error || 'Failed to save delivery executive' });
@@ -228,7 +258,7 @@ export default function ExecutivesPage() {
                   <th className="text-left px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Phone</th>
                   <th className="text-left px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Email Address</th>
                   <th className="text-left px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Vehicle Type</th>
-                  <th className="text-left px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Vehicle Number</th>
+                  <th className="text-left px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Assigned Route & Pincodes</th>
                   <th className="text-left px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Status</th>
                   <th className="text-left px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -241,32 +271,53 @@ export default function ExecutivesPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredExecutives.map((exec) => (
-                    <tr key={exec._id} className="border-t border-slate-100 hover:bg-slate-50/50">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-bold text-slate-800 text-sm">
-                            <UserCheck className="w-5 h-5 text-slate-500" />
+                  filteredExecutives.map((exec) => {
+                    const assignedRoute = typeof exec.assignedRouteId === 'object' ? exec.assignedRouteId : routes.find(r => r._id === exec.assignedRouteId);
+                    return (
+                      <tr key={exec._id} className="border-t border-slate-100 hover:bg-slate-50/50">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-bold text-slate-800 text-sm">
+                              <UserCheck className="w-5 h-5 text-slate-500" />
+                            </div>
+                            <span className="text-sm font-black text-slate-900 block">{exec.name}</span>
                           </div>
-                          <span className="text-sm font-black text-slate-900 block">{exec.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm font-bold text-slate-900">
-                        <span className="flex items-center gap-2">
-                          <Phone className="w-4 h-4 text-slate-400" />
-                          {exec.phone}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm font-medium text-slate-600">
-                        {exec.email ? (
+                        </td>
+                        <td className="px-6 py-4 text-sm font-bold text-slate-900">
                           <span className="flex items-center gap-2">
-                            <Mail className="w-4 h-4 text-slate-400" />
-                            {exec.email}
+                            <Phone className="w-4 h-4 text-slate-400" />
+                            {exec.phone}
                           </span>
-                        ) : '—'}
-                      </td>
-                      <td className="px-6 py-4 text-sm font-bold text-slate-700">{exec.vehicleType}</td>
-                      <td className="px-6 py-4 text-sm font-black text-slate-900">{exec.vehicleNumber || '—'}</td>
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-slate-600">
+                          {exec.email ? (
+                            <span className="flex items-center gap-2">
+                              <Mail className="w-4 h-4 text-slate-400" />
+                              {exec.email}
+                            </span>
+                          ) : '—'}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-bold text-slate-700">{exec.vehicleType}</td>
+                        <td className="px-6 py-4">
+                          <div className="space-y-1">
+                            {assignedRoute ? (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-200 block mb-1">
+                                {assignedRoute.routeName} ({assignedRoute.routeCode})
+                              </span>
+                            ) : null}
+                            {exec.pincodes && exec.pincodes.length > 0 ? (
+                              <div className="flex flex-wrap gap-1 max-w-[220px]">
+                                {exec.pincodes.map((pin, i) => (
+                                  <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                    {pin}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              !assignedRoute && <span className="text-xs text-slate-400 font-bold">—</span>
+                            )}
+                          </div>
+                        </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold border uppercase tracking-wider ${
                           exec.status === 'active' 
@@ -424,6 +475,40 @@ export default function ExecutivesPage() {
                     className="w-full bg-slate-50 border border-slate-100 rounded-[16px] px-4 py-3 text-slate-900 font-bold focus:ring-4 focus:ring-slate-900/5 focus:bg-white transition-all text-sm shadow-inner"
                   />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">Assigned Delivery Route</label>
+                <select
+                  value={form.assignedRouteId}
+                  onChange={(e) => {
+                    const routeId = e.target.value;
+                    const selRoute = routes.find(r => r._id === routeId);
+                    setForm({
+                      ...form,
+                      assignedRouteId: routeId,
+                      pincodesInput: selRoute && selRoute.pincodes ? selRoute.pincodes.join(', ') : form.pincodesInput,
+                    });
+                  }}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-[16px] px-4 py-3 text-slate-900 font-bold focus:ring-4 focus:ring-slate-900/5 focus:bg-white transition-all text-sm shadow-inner"
+                >
+                  <option value="">No Route Assigned (Custom Pincodes)</option>
+                  {routes.map((r) => (
+                    <option key={r._id} value={r._id}>
+                      {r.routeName} ({r.routeCode}) — Pincodes: {r.pincodes ? r.pincodes.join(', ') : 'None'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">Assigned Pincodes (comma-separated)</label>
+                <input
+                  type="text"
+                  value={form.pincodesInput}
+                  onChange={(e) => setForm({ ...form, pincodesInput: e.target.value })}
+                  placeholder="e.g. 500072, 500081, 500084"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-[16px] px-4 py-3 text-slate-900 font-bold focus:ring-4 focus:ring-slate-900/5 focus:bg-white transition-all text-sm shadow-inner"
+                />
               </div>
 
               <div className="pt-6 border-t border-slate-100 flex justify-end gap-3">
