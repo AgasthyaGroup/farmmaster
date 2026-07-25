@@ -27,7 +27,7 @@ export async function login(req: NextRequest) {
     const cleanPhone = username.replace(/^(\+91|0)/, '').replace(/\D/g, '');
 
     // Find Delivery Executive by phone or email
-    const executive = await DeliveryExecutive.findOne({
+    let executive = await DeliveryExecutive.findOne({
       $or: [
         { phone: username },
         { phone: cleanPhone },
@@ -35,6 +35,34 @@ export async function login(req: NextRequest) {
         { email: username.toLowerCase() }
       ]
     });
+
+    // Fallback: Check if account exists in Users collection (for admin/staff login)
+    if (!executive) {
+      const User = (await import('../models/User')).default || (await import('@/app/api/admin/users/route')).User;
+      if (User) {
+        const user = await User.findOne({
+          $or: [
+            { username: username },
+            { phone: username },
+            { phone: cleanPhone }
+          ]
+        });
+
+        if (user && user.password) {
+          const isUserMatch = (user.password === password) || (await bcrypt.compare(password, user.password).catch(() => false));
+          if (isUserMatch) {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            executive = await DeliveryExecutive.create({
+              name: user.name || 'Delivery Executive',
+              phone: user.phone || username,
+              email: user.email || '',
+              password: hashedPassword,
+              status: 'active'
+            });
+          }
+        }
+      }
+    }
 
     if (!executive) {
       return errorResponse('Invalid credentials', 401);
@@ -44,10 +72,16 @@ export async function login(req: NextRequest) {
       return errorResponse('Account is disabled', 403);
     }
 
-    // Verify Password
-    const isMatch = await bcrypt.compare(password, executive.password);
+    // Verify Password (bcrypt hash or plain text fallback)
+    const isMatch = (executive.password === password) || (await bcrypt.compare(password, executive.password).catch(() => false));
     if (!isMatch) {
       return errorResponse('Invalid credentials', 401);
+    }
+
+    // If password was stored as plain text, re-hash it using bcrypt
+    if (executive.password === password && !password.startsWith('$2')) {
+      executive.password = await bcrypt.hash(password, 10);
+      await executive.save();
     }
 
     // Generate Tokens
