@@ -16,6 +16,9 @@ files.forEach(file => {
     content = "import mongoose, { Schema } from 'mongoose';\n" + content;
   }
 
+
+  
+
   // Replace farmId
   if (content.includes('farmId: { type: String')) {
     content = content.replace(/farmId:\s*\{\s*type:\s*String/g, "farmId: { type: Schema.Types.ObjectId, ref: 'Farm'");

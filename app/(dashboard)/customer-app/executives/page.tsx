@@ -45,6 +45,7 @@ export default function ExecutivesPage() {
     name: '',
     phone: '',
     email: '',
+    password: '',
     vehicleType: 'Bike',
     vehicleNumber: '',
     status: 'inactive',
@@ -79,6 +80,7 @@ export default function ExecutivesPage() {
       name: '',
       phone: '',
       email: '',
+      password: '',
       vehicleType: 'Bike',
       vehicleNumber: '',
       status: 'inactive',
@@ -93,6 +95,7 @@ export default function ExecutivesPage() {
       name: exec.name || '',
       phone: exec.phone || '',
       email: exec.email || '',
+      password: '',
       vehicleType: exec.vehicleType || 'Bike',
       vehicleNumber: exec.vehicleNumber || '',
       status: exec.status || 'inactive',
@@ -380,6 +383,18 @@ export default function ExecutivesPage() {
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                   placeholder="ramesh@gmail.com"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-[16px] px-4 py-3 text-slate-900 font-bold focus:ring-4 focus:ring-slate-900/5 focus:bg-white transition-all text-sm shadow-inner"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">Password</label>
+                <input
+                  type="password"
+                  required={!editingExecutive}
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  placeholder={editingExecutive ? "Leave blank to keep unchanged" : "Enter account password"}
                   className="w-full bg-slate-50 border border-slate-100 rounded-[16px] px-4 py-3 text-slate-900 font-bold focus:ring-4 focus:ring-slate-900/5 focus:bg-white transition-all text-sm shadow-inner"
                 />
               </div>

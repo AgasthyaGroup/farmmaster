@@ -15,6 +15,7 @@ const DeliveryExecutiveSchema = new Schema(
   { timestamps: true }
 );
 
+// Prevent mongoose OverwriteModelError
 if (mongoose.models.DeliveryExecutive) {
   delete mongoose.models.DeliveryExecutive;
 }

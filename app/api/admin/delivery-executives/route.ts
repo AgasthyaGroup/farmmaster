@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import bcrypt from 'bcryptjs';
 import dbConnect from '@/src/database/dbConnection';
 import DeliveryExecutive from '@/app/api/customer-app/models/DeliveryExecutive';
 import { withAuth } from '@/src/utils/authGuard';
@@ -27,10 +28,10 @@ export async function POST(req: NextRequest) {
         return errorResponse('Invalid JSON body', 400);
       }
 
-      const { name, phone, email, vehicleType, vehicleNumber, status } = body;
+      const { name, phone, email, password, vehicleType, vehicleNumber, status } = body;
 
-      if (!name || !phone) {
-        return errorResponse('Name and Phone are required fields', 400);
+      if (!name || !phone || !password) {
+        return errorResponse('Name, Phone, and Password are required fields', 400);
       }
 
       await dbConnect();
@@ -41,10 +42,13 @@ export async function POST(req: NextRequest) {
         return errorResponse('Delivery executive phone number already registered', 400);
       }
 
+      const hashedPassword = await bcrypt.hash(password, 10);
+
       const newExecutive = await DeliveryExecutive.create({
         name,
         phone,
         email: email || '',
+        password: hashedPassword,
         vehicleType: vehicleType || 'Bike',
         vehicleNumber: vehicleNumber || '',
         status: status || 'inactive',

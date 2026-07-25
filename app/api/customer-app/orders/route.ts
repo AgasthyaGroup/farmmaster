@@ -27,36 +27,10 @@ async function getCustomerFromRequest(req: NextRequest) {
   return customer;
 }
 
+import { getOrders } from '@/delivery-application/controllers/orders';
+
 export async function GET(req: NextRequest) {
-  try {
-    const customer = await getCustomerFromRequest(req);
-    if (!customer) {
-      return unauthorizedResponse('Invalid or expired token');
-    }
-
-    const ordersList = await Order.find({ customerId: customer._id }).sort({ createdAt: -1 });
-
-    const formattedOrders = ordersList.map((order: any) => {
-      const obj = typeof order.toObject === 'function' ? order.toObject() : order;
-      const computedTotal = (obj.items || []).reduce(
-        (sum: number, item: any) => sum + (Number(item.price || 0) * Number(item.quantity || 1)),
-        0
-      );
-
-      return {
-        ...obj,
-        totalPrice:
-          obj.totalPrice !== undefined && obj.totalPrice !== null && obj.totalPrice > 0
-            ? obj.totalPrice
-            : computedTotal,
-      };
-    });
-
-    return NextResponse.json(formattedOrders);
-  } catch (error: any) {
-    console.error('[GET /api/customer-app/orders] error:', error);
-    return errorResponse(error.message || 'Internal server error', 500);
-  }
+  return getOrders(req);
 }
 
 export async function POST(req: NextRequest) {

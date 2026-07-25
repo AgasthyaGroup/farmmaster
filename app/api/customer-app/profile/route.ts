@@ -24,33 +24,8 @@ async function getCustomerFromRequest(req: NextRequest) {
   return customer;
 }
 
+import { updateProfile } from '@/delivery-application/controllers/profile';
+
 export async function PUT(req: NextRequest) {
-  try {
-    const customer = await getCustomerFromRequest(req);
-    if (!customer) {
-      return unauthorizedResponse('Invalid or expired token');
-    }
-
-    let body: any;
-    try {
-      body = await req.json();
-    } catch {
-      return errorResponse('Invalid JSON body', 400);
-    }
-
-    const updateData: any = {};
-    if (body.name !== undefined) updateData.name = String(body.name).trim();
-    if (body.email !== undefined) updateData.email = String(body.email).trim();
-
-    const updatedCustomer = await Customer.findByIdAndUpdate(
-      customer._id,
-      { $set: updateData },
-      { new: true }
-    );
-
-    return successResponse(updatedCustomer, 'Profile updated successfully');
-  } catch (error: any) {
-    console.error('[PUT /api/customer-app/profile] error:', error);
-    return errorResponse(error.message || 'Internal server error', 500);
-  }
+  return updateProfile(req);
 }

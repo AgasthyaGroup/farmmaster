@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import bcrypt from 'bcryptjs';
 import dbConnect from '@/src/database/dbConnection';
 import DeliveryExecutive from '@/app/api/customer-app/models/DeliveryExecutive';
 import { withAuth } from '@/src/utils/authGuard';
@@ -48,9 +49,16 @@ export async function PUT(
         }
       }
 
+      const updateData = { ...body };
+      if (updateData.password && String(updateData.password).trim() !== '') {
+        updateData.password = await bcrypt.hash(updateData.password, 10);
+      } else {
+        delete updateData.password;
+      }
+
       const updated = await DeliveryExecutive.findByIdAndUpdate(
         id,
-        { $set: body },
+        { $set: updateData },
         { new: true }
       );
 
