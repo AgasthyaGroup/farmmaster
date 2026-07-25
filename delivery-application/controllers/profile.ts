@@ -14,6 +14,33 @@ async function getUserFromRequest(req: NextRequest) {
   return verifyAccessToken(token);
 }
 
+export async function getProfile(req: NextRequest) {
+  try {
+    const user = await getUserFromRequest(req);
+    if (!user) {
+      return unauthorizedResponse('Invalid or expired token');
+    }
+
+    await dbConnect();
+
+    let profile;
+    if (user.role === 'DELIVERY_EXECUTIVE') {
+      profile = await DeliveryExecutive.findById(user.userId).select('-password');
+    } else {
+      profile = await Customer.findById(user.userId);
+    }
+
+    if (!profile) {
+      return errorResponse('Profile not found', 404);
+    }
+
+    return successResponse(profile, 'Profile fetched successfully');
+  } catch (error: any) {
+    console.error('[Delivery Get Profile] error:', error);
+    return errorResponse(error.message || 'Internal server error', 500);
+  }
+}
+
 export async function updateProfile(req: NextRequest) {
   try {
     const user = await getUserFromRequest(req);
