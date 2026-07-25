@@ -30,7 +30,11 @@ export async function getOrders(req: NextRequest) {
       const executiveRoutes = await DeliveryRoute.find({ assignedExecutiveId: user.userId });
       const assignedPincodes = executiveRoutes.flatMap((r: any) => r.pincodes || []);
 
-      const queryConditions: any[] = [{ assignedTo: user.userId }];
+      const queryConditions: any[] = [
+        { assignedTo: user.userId },
+        { assignedTo: null },
+        { assignedTo: { $exists: false } }
+      ];
 
       if (assignedPincodes.length > 0) {
         queryConditions.push(
