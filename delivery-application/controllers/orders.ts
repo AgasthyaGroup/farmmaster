@@ -30,10 +30,11 @@ export async function getOrders(req: NextRequest) {
       const executiveRoutes = await DeliveryRoute.find({ assignedExecutiveId: user.userId });
       const assignedPincodes = executiveRoutes.flatMap((r: any) => r.pincodes || []);
 
+      console.log(`[GetOrders] Executive: ${user.userId}`);
+      console.log(`[GetOrders] Route pincodes:`, assignedPincodes);
+
       const queryConditions: any[] = [
         { assignedTo: user.userId },
-        { assignedTo: null },
-        { assignedTo: { $exists: false } }
       ];
 
       if (assignedPincodes.length > 0) {
@@ -44,9 +45,21 @@ export async function getOrders(req: NextRequest) {
         );
       }
 
+      // Fallback: if no routes configured, show unassigned orders too
+      if (executiveRoutes.length === 0) {
+        queryConditions.push(
+          { assignedTo: null },
+          { assignedTo: { $exists: false } }
+        );
+      }
+
+      console.log(`[GetOrders] Query conditions:`, JSON.stringify(queryConditions));
+
       ordersList = await Order.find({ $or: queryConditions })
         .sort({ createdAt: -1 })
         .populate('assignedTo', 'name');
+
+      console.log(`[GetOrders] Found ${ordersList.length} orders`);
     } else {
       ordersList = await Order.find({ customerId: user.userId })
         .sort({ createdAt: -1 })
