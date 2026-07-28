@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
     const newOrder = await Order.create({
       customerId: customer._id,
       orderNumber,
-      status: status || 'pending',
+      status: status || 'confirmed',
       totalPrice: calculatedTotal,
       items,
       address,

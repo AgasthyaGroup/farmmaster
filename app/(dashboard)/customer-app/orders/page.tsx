@@ -344,8 +344,10 @@ export default function OrdersPage() {
                       className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-4 focus:ring-slate-900/5 focus:bg-white transition-all"
                     >
                       <option value="pending">Pending</option>
-                      <option value="processing">Processing</option>
-                      <option value="completed">Completed</option>
+                      <option value="confirmed">Confirmed</option>
+                      <option value="out_for_delivery">Out for Delivery</option>
+                      <option value="delivered">Delivered</option>
+                      <option value="customer_unavailable">Customer Unavailable</option>
                       <option value="cancelled">Cancelled</option>
                     </select>
                     {updatingId === selectedOrder._id && <Loader2 className="w-4 h-4 animate-spin text-slate-600" />}
