@@ -15,6 +15,7 @@ const OrderSchema = new Schema(
     totalPrice: { type: Number, default: 0 },
     items: [OrderItemSchema],
     address: { type: Object },
+    deliveryDate: { type: String, default: null },
   },
   { timestamps: true }
 );

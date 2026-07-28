@@ -20,6 +20,7 @@ const OrderSchema = new Schema(
     assignedTo: { type: Schema.Types.ObjectId, ref: 'DeliveryExecutive', default: null },
     reason: { type: String, default: '' },
     comment: { type: String, default: '' },
+    deliveryDate: { type: String, default: null },
   },
   { timestamps: true }
 );
