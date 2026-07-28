@@ -35,6 +35,8 @@ export async function getOrders(req: NextRequest) {
 
       const queryConditions: any[] = [
         { assignedTo: user.userId },
+        { assignedTo: null },
+        { assignedTo: { $exists: false } },
       ];
 
       if (assignedPincodes.length > 0) {
@@ -42,14 +44,6 @@ export async function getOrders(req: NextRequest) {
           { 'address.pincode': { $in: assignedPincodes } },
           { 'address.zipCode': { $in: assignedPincodes } },
           { 'address.postalCode': { $in: assignedPincodes } }
-        );
-      }
-
-      // Fallback: if no routes configured, show unassigned orders too
-      if (executiveRoutes.length === 0) {
-        queryConditions.push(
-          { assignedTo: null },
-          { assignedTo: { $exists: false } }
         );
       }
 
