@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import dbConnect from '@/src/database/dbConnection';
 import Customer from '@/app/api/customer-app/models/Customer';
 import DeliveryExecutive from '../models/DeliveryExecutive';
+import DeliveryRoute from '@/app/api/customer-app/models/DeliveryRoute';
 import { verifyAccessToken } from '@/src/utils/jwt';
 import { successResponse, errorResponse, unauthorizedResponse } from '@/src/utils/responses';
 
@@ -23,9 +24,16 @@ export async function getProfile(req: NextRequest) {
 
     await dbConnect();
 
-    let profile;
+    let profile: any;
     if (user.role === 'DELIVERY_EXECUTIVE') {
-      profile = await DeliveryExecutive.findById(user.userId).select('-password');
+      const execProfile = await DeliveryExecutive.findById(user.userId).select('-password').lean();
+      if (execProfile) {
+        const assignedRoute = await DeliveryRoute.findOne({ assignedExecutiveId: user.userId }).lean();
+        profile = {
+          ...execProfile,
+          routeName: assignedRoute ? assignedRoute.routeName : 'No route assigned'
+        };
+      }
     } else {
       profile = await Customer.findById(user.userId);
     }
