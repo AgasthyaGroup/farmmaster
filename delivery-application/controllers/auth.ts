@@ -36,34 +36,7 @@ export async function login(req: NextRequest) {
       ]
     });
 
-    // Fallback: Check if account exists in Users collection (for admin/staff login)
-    if (!executive) {
-      const User = (await import('../models/User')).default || (await import('@/app/api/admin/users/route')).User;
-      if (User) {
-        const user = await User.findOne({
-          $or: [
-            { username: username },
-            { phone: username },
-            { phone: cleanPhone }
-          ]
-        });
-
-        if (user && user.password) {
-          const isUserMatch = (user.password === password) || (await bcrypt.compare(password, user.password).catch(() => false));
-          if (isUserMatch) {
-            const hashedPassword = await bcrypt.hash(password, 10);
-            executive = await DeliveryExecutive.create({
-              name: user.name || 'Delivery Executive',
-              phone: user.phone || username,
-              email: user.email || '',
-              password: hashedPassword,
-              status: 'active'
-            });
-          }
-        }
-      }
-    }
-
+    // If no executive found, return invalid credentials
     if (!executive) {
       return errorResponse('Invalid credentials', 401);
     }

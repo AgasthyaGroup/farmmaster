@@ -95,14 +95,15 @@ export async function getOrders(req: NextRequest) {
   }
 }
 
-export async function updateOrderStatus(req: NextRequest, { params }: { params: { id: string } }) {
+export async function updateOrderStatus(req: NextRequest, { params }: { params: any }) {
   try {
     const user = await getUserFromRequest(req);
     if (!user) {
       return unauthorizedResponse('Invalid or expired token');
     }
 
-    const orderId = params.id;
+    const resolvedParams = params instanceof Promise ? await params : await Promise.resolve(params);
+    const orderId = resolvedParams?.id;
     if (!orderId) {
       return errorResponse('Order ID is required', 400);
     }

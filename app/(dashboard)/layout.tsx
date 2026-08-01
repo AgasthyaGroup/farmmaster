@@ -77,6 +77,7 @@ const sidebarItems: SidebarItem[] = [
       { name: 'Locations', href: '/customer-app/locations' },
       { name: 'Executives', href: '/customer-app/executives' },
       { name: 'Routes', href: '/customer-app/routes' },
+      { name: 'Payment Methods', href: '/customer-app/payment-methods' },
     ],
   },
 ];

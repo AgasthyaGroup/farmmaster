@@ -27,6 +27,18 @@ vi.mock('@/app/api/customer-app/models/DeliveryLocation', () => ({
   },
 }));
 
+vi.mock('@/app/api/customer-app/models/DeliveryRoute', () => ({
+  default: {
+    find: vi.fn().mockResolvedValue([]),
+  },
+}));
+
+vi.mock('@/app/api/customer-app/models/DeliveryExecutive', () => ({
+  default: {
+    find: vi.fn().mockResolvedValue([]),
+  },
+}));
+
 vi.mock('@/src/utils/jwt', () => ({
   verifyAccessToken: vi.fn((token: string) => {
     if (token === 'admin-token') {

@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     const locations = await DeliveryLocation.find({ status: 'active' }).sort({ createdAt: -1 });
     
     // Convert to plan objects
-    const locationList = locations.map(loc => loc.toObject ? loc.toObject() : loc);
+    const locationList: any[] = locations.map(loc => loc.toObject ? loc.toObject() : loc);
     const existingPincodes = new Set(locationList.map(loc => String(loc.pincode).trim()));
 
     // 2. Fetch active delivery routes to find any extra pincodes
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
           if (cleanPin && !existingPincodes.has(cleanPin)) {
             existingPincodes.add(cleanPin);
             locationList.push({
-              _id: `route-pin-${cleanPin}`,
+              _id: `route-pin-${cleanPin}` as any,
               name: route.routeName || 'Delivery Route',
               pincode: cleanPin,
               city: route.startPoint || 'Local',
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
           if (cleanPin && !existingPincodes.has(cleanPin)) {
             existingPincodes.add(cleanPin);
             locationList.push({
-              _id: `exec-pin-${cleanPin}`,
+              _id: `exec-pin-${cleanPin}` as any,
               name: exec.name || 'Executive Area',
               pincode: cleanPin,
               city: 'Local',

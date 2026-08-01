@@ -183,7 +183,7 @@ export default function ExecutivesPage() {
       });
       const result = await res.json();
       if (result.success) {
-        await fetchExecutives();
+        await fetchData();
       } else {
         alert(result.error || 'Failed to delete executive');
       }
@@ -344,7 +344,8 @@ export default function ExecutivesPage() {
                         </div>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
