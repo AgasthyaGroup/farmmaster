@@ -123,15 +123,15 @@ export async function POST(req: NextRequest) {
         if (!inv) {
           inv = await ProductInventory.create({ productId: item.product, quantity: prodObj ? prodObj.quantity : 0 });
         }
-        const newQty = Math.max(0, inv.quantity - Number(item.quantity));
-
+        // Atomically decrement inventory quantity
         await ProductInventory.findOneAndUpdate(
-          { productId: item.product },
-          { quantity: newQty }
+          { productId: item.product, quantity: { $gte: Number(item.quantity) } },
+          { $inc: { quantity: -Number(item.quantity) } }
         );
-        await Product.findByIdAndUpdate(
-          item.product,
-          { quantity: newQty }
+        // Atomically decrement product quantity
+        await Product.findOneAndUpdate(
+          { _id: item.product, quantity: { $gte: Number(item.quantity) } },
+          { $inc: { quantity: -Number(item.quantity) } }
         );
       }
     }

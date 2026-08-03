@@ -122,10 +122,10 @@ export async function updateOrderStatus(req: NextRequest, { params }: { params: 
 
     await dbConnect();
 
-    // Verify order exists
-    const order = await Order.findById(orderId);
+    // Verify order exists and is assigned to this executive
+    const order = await Order.findOne({ _id: orderId, assignedTo: user.userId });
     if (!order) {
-      return errorResponse('Order not found', 404);
+      return errorResponse('Order not found or not assigned to you', 403);
     }
 
     // Update status and feedback
